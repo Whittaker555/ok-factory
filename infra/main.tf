@@ -84,6 +84,16 @@ resource "aws_acm_certificate" "site" {
   }
 }
 
+# ── ACM Validation (waits for DNS validation in Namecheap) ────
+resource "aws_acm_certificate_validation" "site" {
+  provider        = aws.us_east_1
+  certificate_arn = aws_acm_certificate.site.arn
+
+  # This will block until you add the CNAME record in Namecheap.
+  # Run `terraform output acm_validation_records` to see what to add.
+  # Terraform will poll every 10s until the cert is validated (~5 min after DNS update).
+}
+
 # ── CloudFront OAC ────────────────────────────────────────────
 resource "aws_cloudfront_origin_access_control" "site" {
   name                              = "${var.bucket_name}-oac"
@@ -132,7 +142,7 @@ resource "aws_cloudfront_distribution" "site" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = aws_acm_certificate.site.arn
+    acm_certificate_arn      = aws_acm_certificate_validation.site.certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
