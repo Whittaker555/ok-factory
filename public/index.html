@@ -79,18 +79,10 @@ body {
    ═══════════════════════════════════════════════ */
 #app {
   display: grid;
-  grid-template-rows: 54px 24px 1fr 32px;
+  grid-template-rows: 54px 1fr 32px;
   grid-template-columns: 220px 1fr;
   height: 100vh;
   width: 100vw;
-}
-
-#conveyor-strip {
-  grid-column: 1 / -1;
-  background: var(--bg-dark);
-  border-bottom: 1px solid var(--border);
-  padding: 0;
-  overflow: hidden;
 }
 
 /* TOP BAR */
@@ -103,6 +95,22 @@ body {
   padding: 0 20px;
   gap: 24px;
   z-index: 100;
+  position: relative;
+  overflow: hidden;
+}
+
+#topbar-rain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#topbar > *:not(#topbar-rain) {
+  position: relative;
+  z-index: 1;
 }
 
 #topbar .logo {
@@ -433,17 +441,7 @@ button:active, .btn:active { opacity: 0.85; }
   opacity: 0.6;
 }
 
-@keyframes conveyorMove {
-  0% { background-position: 0 0; }
-  100% { background-position: 16px 0; }
-}
 
-/* LIVE CONVEYOR CANVAS */
-#conveyor-canvas {
-  display: block;
-  width: 100%;
-  height: 24px;
-}
 
 /* MODAL */
 .modal-overlay {
@@ -1210,6 +1208,7 @@ select option { background: var(--bg-raised); color: var(--text); }
 <div id="app" style="display:none;">
   <!-- TOP BAR -->
   <header id="topbar">
+    <canvas id="topbar-rain"></canvas>
     <div class="logo"><span class="brand">OK FACTORY</span> <span>— v0.1</span></div>
     <div class="topbar-stats">
       <div class="topbar-stat">
@@ -1243,11 +1242,6 @@ select option { background: var(--bg-raised); color: var(--text); }
       </div>
     </div>
   </header>
-
-  <!-- CONVEYOR STRIP -->
-  <div id="conveyor-strip">
-    <canvas id="conveyor-canvas"></canvas>
-  </div>
 
   <!-- SIDEBAR -->
   <nav id="sidebar">
@@ -2154,13 +2148,12 @@ function updateUI() {
 // ─── LIVE CONVEYOR BELT (canvas-based) ──────────────────────
 
 const conveyor = {
-  items: [],          // { x, color }
-  lastSpawn: 0,       // timestamp of last spawn
+  items: [],          // { x, y, color, speed }
   throughput: 0,      // cached items/min
   resourcePool: [],   // [color, color, ...] weighted by production rate
-  trackOffset: 0,     // px offset for dashed line animation
-  speed: 60,          // px/sec for items
   lastFrame: 0,
+  spawnQueue: [],     // scheduled spawn times within the current minute window
+  windowStart: 0,     // start of current 60-second spawn window
 };
 
 function updateConveyorData(stats) {
@@ -2186,16 +2179,29 @@ function updateConveyorData(stats) {
     }
   }
   conveyor.resourcePool = pool.length > 0 ? pool : ['#444'];
-  // Speed: nearly constant so density is controlled by spawn rate
-  conveyor.speed = 55 + Math.log2(1 + conveyor.throughput / 500) * 5;
 }
 
-function animateConveyor(now) {
-  requestAnimationFrame(animateConveyor);
-  const canvas = document.getElementById('conveyor-canvas');
+function scheduleSpawnWindow(now, W) {
+  // Schedule random spawn times for the next 60s window
+  conveyor.windowStart = now;
+  conveyor.spawnQueue = [];
+  // Visual items per minute: scale with throughput but cap for performance
+  const visualIPM = Math.min(300, Math.max(0, conveyor.throughput * 0.5));
+  const count = Math.round(visualIPM);
+  for (let i = 0; i < count; i++) {
+    conveyor.spawnQueue.push({
+      time: now + Math.random() * 60000,
+      x: 4 + Math.random() * (W - 8),  // random x, with margin
+    });
+  }
+  conveyor.spawnQueue.sort((a, b) => a.time - b.time);
+}
+
+function animateRain(now) {
+  requestAnimationFrame(animateRain);
+  const canvas = document.getElementById('topbar-rain');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  // Size canvas to actual CSS pixels
   const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
@@ -2209,65 +2215,32 @@ function animateConveyor(now) {
   conveyor.lastFrame = now;
   ctx.clearRect(0, 0, W, H);
 
-  // ── Draw dashed track ──
-  const midY = H / 2;
-  conveyor.trackOffset = (conveyor.trackOffset + dt * 40) % 16;
-  ctx.save();
-  ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([8, 8]);
-  ctx.lineDashOffset = -conveyor.trackOffset;
-  ctx.beginPath();
-  ctx.moveTo(0, midY);
-  ctx.lineTo(W, midY);
-  ctx.stroke();
-  ctx.restore();
+  if (conveyor.throughput < 0.1) return;
 
-  if (conveyor.throughput < 0.1) return; // idle — just the track
-
-  // ── Spawn items from left edge ──
-  // Items should only touch at ~100k items/min.
-  // Gap = speed / spawn_rate. At 100k, gap = item_size (14px) → touching.
-  // Scale interval with sqrt(100000/T) so density grows as sqrt of throughput.
-  const sz = 14; // item square size
-  const touchInterval = sz / conveyor.speed * 1000; // ms when items just touch
-  const interval = Math.max(touchInterval, touchInterval * Math.sqrt(100000 / Math.max(1, conveyor.throughput)));
-  // If we've been idle too long, reset spawn timer so items feed in gradually
-  if (now - conveyor.lastSpawn > interval * 2) {
-    conveyor.lastSpawn = now;
+  // ── Re-schedule spawn window every 60s ──
+  if (!conveyor.windowStart || now - conveyor.windowStart >= 60000) {
+    scheduleSpawnWindow(now, W);
   }
-  if (now - conveyor.lastSpawn >= interval) {
+
+  // ── Spawn items whose scheduled time has arrived ──
+  while (conveyor.spawnQueue.length > 0 && conveyor.spawnQueue[0].time <= now) {
+    const spawn = conveyor.spawnQueue.shift();
     const color = conveyor.resourcePool[Math.floor(Math.random() * conveyor.resourcePool.length)];
-    conveyor.items.push({ x: -10, color });
-    conveyor.lastSpawn = now;
+    const speed = 20 + Math.random() * 30; // 20-50 px/s fall speed
+    conveyor.items.push({ x: spawn.x, y: -10, color, speed });
   }
 
-  // ── Track glow scales with throughput ──
-  const glowIntensity = Math.min(0.6, conveyor.throughput / 5000);
-  if (glowIntensity > 0.05) {
-    ctx.save();
-    ctx.strokeStyle = `rgba(245, 158, 11, ${glowIntensity})`;
-    ctx.lineWidth = 6;
-    ctx.shadowColor = 'rgba(245, 158, 11, 0.5)';
-    ctx.shadowBlur = 8 + glowIntensity * 12;
-    ctx.beginPath();
-    ctx.moveTo(0, midY);
-    ctx.lineTo(W, midY);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // ── Move & draw items ──
-  const r = 3;   // corner radius
+  // ── Move & draw falling items ──
+  const sz = 8;
+  const r = 2;
   for (let i = conveyor.items.length - 1; i >= 0; i--) {
     const item = conveyor.items[i];
-    item.x += conveyor.speed * dt;
-    if (item.x > W + 20) { conveyor.items.splice(i, 1); continue; }
+    item.y += item.speed * dt;
+    if (item.y > H + 12) { conveyor.items.splice(i, 1); continue; }
 
     const ix = item.x - sz / 2;
-    const iy = midY - sz / 2;
+    const iy = item.y - sz / 2;
 
-    // Rounded rect
     ctx.beginPath();
     ctx.moveTo(ix + r, iy);
     ctx.lineTo(ix + sz - r, iy);
@@ -2280,18 +2253,14 @@ function animateConveyor(now) {
     ctx.quadraticCurveTo(ix, iy, ix + r, iy);
     ctx.closePath();
     ctx.fillStyle = item.color;
-    ctx.globalAlpha = 0.85;
+    ctx.globalAlpha = 0.45;
     ctx.fill();
-    ctx.globalAlpha = 0.15;
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1;
-    ctx.stroke();
     ctx.globalAlpha = 1;
   }
 }
 
 // Start the animation loop once
-requestAnimationFrame(animateConveyor);
+requestAnimationFrame(animateRain);
 
 
 
@@ -3737,7 +3706,8 @@ function doNewRun() {
   closeModal();
   gameState = newGameState();
   conveyor.items = [];
-  conveyor.lastSpawn = 0;
+  conveyor.spawnQueue = [];
+  conveyor.windowStart = 0;
   conveyor.throughput = 0;
   conveyor.resourcePool = ['#444'];
   updateUI();
@@ -3793,7 +3763,7 @@ window.addEventListener('beforeunload', (e) => {
     ctx.clearRect(0, 0, W, H);
     const midY = H / 2;
     // Dashed track
-    introConveyor.trackOffset = (introConveyor.trackOffset + dt * 40) % 16;
+    introConveyor.trackOffset = (introConveyor.trackOffset + dt * introConveyor.speed) % 16;
     ctx.save();
     ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
     ctx.lineWidth = 2;
