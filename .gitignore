@@ -21,6 +21,12 @@ debug_*.js
 dist/
 .cache/
 
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.backup
+infra/.terraform.lock.hcl
+
 # Environment
 .env
 .env.*
