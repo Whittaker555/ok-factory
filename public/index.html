@@ -1,0 +1,3834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>OK FACTORY — Build. Automate. Dominate.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   CSS VARIABLES & RESET
+   ═══════════════════════════════════════════════ */
+:root {
+  --bg-dark: #0a0c10;
+  --bg-panel: #11141c;
+  --bg-card: #161a25;
+  --bg-card-hover: #1c2130;
+  --bg-input: #0d1018;
+  --border: #1e2435;
+  --border-light: #2a3148;
+  --amber: #f59e0b;
+  --amber-dim: #b47208;
+  --amber-glow: rgba(245, 158, 11, 0.15);
+  --amber-glow-strong: rgba(245, 158, 11, 0.3);
+  --orange: #f97316;
+  --red: #ef4444;
+  --red-dim: #991b1b;
+  --green: #22c55e;
+  --green-dim: #166534;
+  --blue: #3b82f6;
+  --blue-dim: #1e40af;
+  --purple: #a855f7;
+  --cyan: #06b6d4;
+  --text-bright: #e8eaf0;
+  --text: #9ca3b8;
+  --text-dim: #5a6178;
+  --text-dark: #3a4058;
+  --font-display: 'Orbitron', monospace;
+  --font-mono: 'Share Tech Mono', monospace;
+  --font-body: 'Rajdhani', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg-dark);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--amber-dim); }
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════ */
+#app {
+  display: grid;
+  grid-template-rows: 54px 24px 1fr 32px;
+  grid-template-columns: 220px 1fr;
+  height: 100vh;
+  width: 100vw;
+}
+
+#conveyor-strip {
+  grid-column: 1 / -1;
+  background: var(--bg-dark);
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+  overflow: hidden;
+}
+
+/* TOP BAR */
+#topbar {
+  grid-column: 1 / -1;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 24px;
+  z-index: 100;
+}
+
+#topbar .logo {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 18px;
+  color: var(--amber);
+  letter-spacing: 3px;
+  text-shadow: 0 0 20px var(--amber-glow-strong);
+  white-space: nowrap;
+}
+
+#topbar .logo span { color: var(--text-dim); font-weight: 400; font-size: 11px; letter-spacing: 1px; }
+
+.topbar-stats {
+  display: flex;
+  gap: 28px;
+  margin-left: auto;
+  align-items: center;
+}
+
+.topbar-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.topbar-stat label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+.topbar-stat .value {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  color: var(--text-bright);
+}
+
+.topbar-stat .value.net-worth {
+  color: var(--amber);
+  font-size: 20px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-shadow: 0 0 12px var(--amber-glow-strong);
+}
+
+.topbar-stat .value.power-ok { color: var(--green); }
+.topbar-stat .value.power-warn { color: var(--orange); }
+.topbar-stat .value.power-crit { color: var(--red); }
+
+/* SIDEBAR */
+#sidebar {
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.nav-section {
+  padding: 8px 16px 4px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-dark);
+  font-family: var(--font-mono);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  user-select: none;
+}
+
+.nav-item:hover {
+  background: var(--bg-card);
+  color: var(--text-bright);
+}
+
+.nav-item.active {
+  background: var(--amber-glow);
+  border-left-color: var(--amber);
+  color: var(--amber);
+}
+
+.nav-item .icon { font-size: 16px; width: 22px; text-align: center; }
+.nav-item .badge {
+  margin-left: auto;
+  background: var(--red);
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+}
+
+/* MAIN CONTENT */
+#main {
+  overflow-y: auto;
+  padding: 20px 24px;
+  background: var(--bg-dark);
+  position: relative;
+}
+
+/* Background texture */
+#main::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 220px; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(245, 158, 11, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(59, 130, 246, 0.02) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#main > * { position: relative; z-index: 1; }
+
+/* STATUS BAR */
+#statusbar {
+  grid-column: 1 / -1;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 20px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.status-item { display: flex; gap: 6px; align-items: center; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; }
+.status-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.status-dot.amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+.status-dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+/* ═══════════════════════════════════════════════
+   PAGE STYLES
+   ═══════════════════════════════════════════════ */
+.page { display: none; }
+.page.active { display: block; }
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 4px;
+  letter-spacing: 2px;
+}
+
+.page-subtitle {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-bottom: 20px;
+  font-family: var(--font-mono);
+}
+
+/* CARDS */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+
+.card:hover { border-color: var(--border-light); }
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* GRID LAYOUTS */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+/* BUTTONS */
+.btn {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 16px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.btn:hover { background: var(--bg-card-hover); color: var(--text-bright); }
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: var(--amber);
+  color: var(--bg-dark);
+  border-color: var(--amber);
+  font-weight: 700;
+}
+
+.btn-primary:hover { background: #fbbf24; }
+.btn-primary:disabled { background: var(--amber-dim); opacity: 0.5; cursor: not-allowed; }
+.btn-primary:disabled:hover { background: var(--amber-dim); }
+
+.btn-danger { border-color: var(--red-dim); color: var(--red); }
+.btn-danger:hover { background: var(--red-dim); color: #fff; }
+
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+
+/* PROGRESS BAR */
+.progress-bar {
+  height: 6px;
+  background: var(--bg-input);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+  background: var(--amber);
+}
+
+.progress-fill.green { background: var(--green); }
+.progress-fill.red { background: var(--red); }
+.progress-fill.blue { background: var(--blue); }
+.progress-fill.amber { background: var(--amber); }
+
+/* TABLES */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 8px 10px;
+  color: var(--text-dim);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.data-table tr:hover td { background: var(--bg-card-hover); }
+
+.text-green { color: var(--green); }
+.text-red { color: var(--red); }
+.text-amber { color: var(--amber); }
+.text-blue { color: var(--blue); }
+.text-dim { color: var(--text-dim); }
+.text-bright { color: var(--text-bright); }
+.text-purple { color: var(--purple); }
+.text-cyan { color: var(--cyan); }
+
+/* CONVEYOR DIVIDER */
+.conveyor-divider {
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--amber-dim) 0px,
+    var(--amber-dim) 8px,
+    transparent 8px,
+    transparent 16px
+  );
+  background-size: 200% 100%;
+  animation: conveyorMove 1s linear infinite;
+  margin: 20px 0;
+  border-radius: 2px;
+  opacity: 0.6;
+}
+
+@keyframes conveyorMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 16px 0; }
+}
+
+/* LIVE CONVEYOR CANVAS */
+#conveyor-canvas {
+  display: block;
+  width: 100%;
+  height: 24px;
+}
+
+/* MODAL */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 400px;
+  max-width: 700px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px var(--amber-glow);
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--amber);
+  margin-bottom: 16px;
+  letter-spacing: 1px;
+}
+
+/* SELECT / INPUT */
+select, input[type="number"] {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  outline: none;
+}
+
+select:focus, input[type="number"]:focus { border-color: var(--amber); }
+select option { background: var(--bg-panel); color: var(--text); }
+
+/* ALERTS */
+.alert-list { display: flex; flex-direction: column; gap: 6px; }
+.alert-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border-left: 3px solid var(--orange);
+  border-radius: 0 4px 4px 0;
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+.alert-item.critical { border-left-color: var(--red); }
+.alert-item.good { border-left-color: var(--green); }
+
+/* TOOLTIPS */
+[data-tooltip] { position: relative; }
+[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  color: var(--text-bright);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 200;
+  font-family: var(--font-mono);
+}
+
+/* RESOURCE ICONS */
+.res-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+/* TAB BAR */
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-dim);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+/* MACHINE SLOT */
+.machine-slot {
+  background: var(--bg-input);
+  border: 1px dashed var(--border-light);
+  border-radius: 6px;
+  padding: 12px;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  gap: 6px;
+}
+
+.machine-slot:hover {
+  border-color: var(--amber-dim);
+  background: var(--bg-card);
+}
+
+.machine-slot.filled {
+  border-style: solid;
+  border-color: var(--border-light);
+  background: var(--bg-card);
+  align-items: stretch;
+}
+
+.machine-slot.filled .slot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.machine-slot.filled .slot-name {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: 0.5px;
+}
+
+.machine-slot.filled .slot-recipe {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--amber);
+}
+
+.machine-slot.filled .slot-io {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.machine-slot.filled .slot-efficiency {
+  margin-top: 6px;
+}
+
+.machine-slot .empty-label {
+  color: var(--text-dark);
+  font-size: 24px;
+}
+
+.machine-slot .empty-text {
+  color: var(--text-dark);
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+/* EFFICIENCY COLORS */
+.eff-100 { color: var(--green); }
+.eff-75 { color: var(--amber); }
+.eff-50 { color: var(--orange); }
+.eff-0 { color: var(--red); }
+
+/* RESEARCH NODE */
+.research-node {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.research-node:hover { border-color: var(--amber-dim); }
+.research-node.locked { opacity: 0.4; cursor: not-allowed; }
+.research-node.locked:hover { border-color: var(--border); }
+.research-node.completed { border-color: var(--green-dim); }
+.research-node.completed::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  color: var(--green);
+  font-size: 16px;
+  font-weight: bold;
+}
+.research-node.in-progress { border-color: var(--amber); box-shadow: 0 0 12px var(--amber-glow); }
+.research-node.in-progress::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: var(--progress, 0%);
+  background: linear-gradient(90deg, rgba(180,114,8,0.15), rgba(180,114,8,0.08));
+  pointer-events: none;
+  transition: width 0.5s linear;
+}
+
+.research-node .rn-tier {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-dark);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.research-node .rn-name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--text-bright);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.research-node .rn-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.research-node .rn-cost {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text);
+}
+
+/* SCORE EXPORT */
+.score-export {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  white-space: pre;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* PULSE ANIMATION */
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.pulse { animation: pulse 2s ease-in-out infinite; }
+
+/* COUNTER ANIMATION */
+@keyframes tickUp {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
+}
+
+.tick { animation: tickUp 0.3s ease; }
+
+/* GLOW */
+.glow-amber { box-shadow: 0 0 15px var(--amber-glow); }
+
+/* NOTIFICATION TOAST */
+.toast-container {
+  position: fixed;
+  top: 64px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-left: 3px solid var(--amber);
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-bright);
+  font-family: var(--font-mono);
+  animation: slideIn 0.3s ease, fadeOut 0.5s ease 3s forwards;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  max-width: 350px;
+}
+
+.toast.success { border-left-color: var(--green); }
+.toast.error { border-left-color: var(--red); }
+
+@keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+/* MANUAL CRANK */
+.crank-btn {
+  background: linear-gradient(180deg, #2a1800 0%, #1a0f00 100%);
+  border: 2px solid var(--amber-dim);
+  color: var(--amber);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.1s;
+  user-select: none;
+  text-shadow: 0 0 8px var(--amber-glow);
+  position: relative;
+  overflow: hidden;
+}
+
+.crank-btn:hover {
+  background: linear-gradient(180deg, #3a2200 0%, #2a1500 100%);
+  border-color: var(--amber);
+  box-shadow: 0 0 15px var(--amber-glow);
+}
+
+.crank-btn:active {
+  transform: scale(0.93);
+  background: var(--amber);
+  color: var(--bg-dark);
+}
+
+.crank-btn.deficit {
+  animation: crankPulse 0.8s ease-in-out infinite;
+  border-color: var(--red);
+  box-shadow: 0 0 12px rgba(239,68,68,0.4);
+}
+
+@keyframes crankPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 8px rgba(239,68,68,0.3); }
+  50% { transform: scale(1.06); box-shadow: 0 0 18px rgba(239,68,68,0.6); }
+}
+
+.deficit-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--red);
+  letter-spacing: 1px;
+  animation: deficitBlink 1.2s ease-in-out infinite;
+}
+
+@keyframes deficitBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.crank-btn .crank-flash {
+  position: absolute;
+  top: 0; left: -100%; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(245,158,11,0.3), transparent);
+  animation: crankFlash 0.4s ease;
+}
+
+@keyframes crankFlash {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.manual-power-indicator {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--amber);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.manual-power-indicator .mp-bar {
+  width: 40px;
+  height: 4px;
+  background: var(--bg-input);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.manual-power-indicator .mp-fill {
+  height: 100%;
+  background: var(--amber);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* CHALLENGE OVERLAY */
+.challenge-overlay {
+  position: fixed;
+  bottom: 16px; right: 16px;
+  z-index: 800;
+  animation: challengeSlideIn 0.35s ease;
+  pointer-events: auto;
+}
+
+@keyframes challengeSlideIn {
+  from { opacity: 0; transform: translateX(100px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; } to { opacity: 1; }
+}
+
+.challenge-box {
+  background: var(--bg-panel);
+  border: 2px solid var(--amber);
+  border-radius: 10px;
+  padding: 16px 20px;
+  width: 340px;
+  text-align: center;
+  box-shadow: 0 0 40px var(--amber-glow-strong), 0 10px 30px rgba(0,0,0,0.6);
+  animation: challengePop 0.3s ease;
+}
+
+@keyframes challengePop {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.challenge-box .ch-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--amber);
+  letter-spacing: 2px;
+  margin-bottom: 2px;
+}
+
+.challenge-box .ch-subtitle {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.challenge-box .ch-timer {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--red);
+  margin-bottom: 8px;
+}
+
+/* Calibration challenge */
+.calibration-track {
+  width: 100%;
+  height: 40px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  position: relative;
+  margin: 16px 0;
+  overflow: hidden;
+}
+
+.calibration-zone {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(34, 197, 94, 0.2);
+  border-left: 2px solid var(--green);
+  border-right: 2px solid var(--green);
+}
+
+.calibration-needle {
+  position: absolute;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--amber);
+  box-shadow: 0 0 10px var(--amber);
+  transition: none;
+}
+
+/* Sequence challenge */
+.sequence-grid {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.seq-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  border: 2px solid var(--border-light);
+  cursor: pointer;
+  transition: all 0.15s;
+  opacity: 0.4;
+}
+
+.seq-btn:hover { opacity: 0.7; }
+.seq-btn.flash { opacity: 1; transform: scale(1.1); box-shadow: 0 0 20px currentColor; }
+.seq-btn.active { opacity: 1; border-color: #fff; }
+.seq-btn.wrong { opacity: 1; border-color: var(--red); box-shadow: 0 0 20px var(--red); }
+.seq-btn.correct { opacity: 1; border-color: var(--green); box-shadow: 0 0 20px var(--green); }
+
+.seq-btn[data-color="0"] { background: #ef4444; color: #ef4444; }
+.seq-btn[data-color="1"] { background: #3b82f6; color: #3b82f6; }
+.seq-btn[data-color="2"] { background: #22c55e; color: #22c55e; }
+.seq-btn[data-color="3"] { background: #f59e0b; color: #f59e0b; }
+
+/* Overload challenge */
+.overload-meter {
+  width: 100%;
+  height: 32px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 16px 0;
+  position: relative;
+}
+
+.overload-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber-dim), var(--amber), var(--orange));
+  border-radius: 6px;
+  transition: width 0.05s linear;
+}
+
+.overload-target {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2px;
+  height: 100%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+}
+
+.overload-btn {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #3a2200 0%, #1a0f00 100%);
+  border: 3px solid var(--amber-dim);
+  color: var(--amber);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.05s;
+  margin: 12px auto;
+  display: block;
+  letter-spacing: 1px;
+}
+
+.overload-btn:hover {
+  border-color: var(--amber);
+  box-shadow: 0 0 20px var(--amber-glow);
+}
+
+.overload-btn:active {
+  transform: scale(0.92);
+  background: radial-gradient(circle, var(--amber) 0%, #3a2200 100%);
+  color: var(--bg-dark);
+}
+
+/* Challenge result */
+.ch-result {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  margin: 10px 0 4px;
+  letter-spacing: 1px;
+}
+
+.ch-result.perfect { color: var(--green); text-shadow: 0 0 15px rgba(34,197,94,0.5); }
+.ch-result.good { color: var(--amber); }
+.ch-result.ok { color: var(--orange); }
+.ch-result.fail { color: var(--red); }
+
+.ch-reward {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+/* Big crank on power page */
+.big-crank-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  gap: 16px;
+}
+
+.big-crank-btn {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #3a2200 0%, #1a0f00 60%, #0a0600 100%);
+  border: 3px solid var(--amber-dim);
+  color: var(--amber);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.1s;
+  letter-spacing: 1px;
+  box-shadow: inset 0 -4px 12px rgba(0,0,0,0.4), 0 4px 20px rgba(0,0,0,0.3);
+  user-select: none;
+  text-shadow: 0 0 10px var(--amber-glow);
+}
+
+.big-crank-btn:hover {
+  border-color: var(--amber);
+  box-shadow: inset 0 -4px 12px rgba(0,0,0,0.4), 0 0 30px var(--amber-glow);
+}
+
+.big-crank-btn:active {
+  transform: scale(0.9);
+  background: radial-gradient(circle at 40% 35%, var(--amber) 0%, #3a2200 60%, #1a0f00 100%);
+  color: var(--bg-dark);
+  text-shadow: none;
+}
+
+/* INTRO SCREEN */
+#intro-screen {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg-dark);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  transition: opacity 0.8s ease;
+}
+
+#intro-screen.fade-out { opacity: 0; pointer-events: none; }
+
+#intro-screen .intro-logo {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 900;
+  color: var(--amber);
+  text-shadow: 0 0 40px var(--amber-glow-strong), 0 0 80px var(--amber-glow);
+  letter-spacing: 6px;
+}
+
+#intro-screen .intro-sub {
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  font-size: 14px;
+  letter-spacing: 4px;
+}
+
+#intro-screen .intro-conveyor {
+  width: 400px;
+  height: 24px;
+  margin-top: 20px;
+}
+</style>
+</head>
+<body>
+
+<!-- INTRO -->
+<div id="intro-screen">
+  <div class="intro-logo">OK FACTORY</div>
+  <div class="intro-sub">BUILD · AUTOMATE · DOMINATE</div>
+  <div class="intro-conveyor">
+    <canvas id="intro-conveyor-canvas" style="width:100%;height:100%;display:block;"></canvas>
+  </div>
+  <div id="intro-buttons" style="margin-top:12px;display:flex;flex-direction:column;align-items:center;gap:10px;">
+    <button class="btn btn-primary" style="font-size:16px;padding:12px 40px;letter-spacing:2px;" onclick="startGame(false)">NEW PRODUCTION</button>
+  </div>
+  <div id="intro-import" style="margin-top:20px;">
+    <button class="btn" style="font-size:12px;padding:8px 20px;opacity:0.6;" onclick="showImportDialog()">IMPORT SAVE</button>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toasts"></div>
+
+<!-- MODAL CONTAINER -->
+<div id="modal-root"></div>
+<!-- CHALLENGE CONTAINER -->
+<div id="challenge-root"></div>
+
+<!-- APP -->
+<div id="app" style="display:none;">
+  <!-- TOP BAR -->
+  <header id="topbar">
+    <div class="logo">OK FACTORY <span>v0.1</span></div>
+    <div class="topbar-stats">
+      <div class="topbar-stat">
+        <label>Session</label>
+        <div class="value" id="stat-session">00:00:00</div>
+      </div>
+      <div class="topbar-stat">
+        <label>Power</label>
+        <div class="value power-ok" id="stat-power">0 / 0 MW</div>
+        <div id="stat-power-auto" style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-top:1px;"></div>
+      </div>
+      <div class="topbar-stat">
+        <label>Efficiency</label>
+        <div class="value" id="stat-efficiency">100%</div>
+      </div>
+      <div class="topbar-stat">
+        <label>Items/min</label>
+        <div class="value" id="stat-throughput">0</div>
+      </div>
+      <div class="topbar-stat">
+        <label>Net Worth</label>
+        <div class="value net-worth" id="stat-networth">0</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:8px;border-left:1px solid var(--border);padding-left:16px;">
+        <button class="crank-btn" onclick="crankManualPower()" title="Click to generate manual power!">⚡ CRANK</button>
+        <div class="manual-power-indicator">
+          <span id="manual-mw">0</span>MW
+          <div class="mp-bar"><div class="mp-fill" id="manual-bar" style="width:0%"></div></div>
+          <span id="power-deficit-label" class="deficit-label" style="display:none;"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONVEYOR STRIP -->
+  <div id="conveyor-strip">
+    <canvas id="conveyor-canvas"></canvas>
+  </div>
+
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="nav-section">Operations</div>
+    <div class="nav-item active" data-page="dashboard">
+      <span class="icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" data-page="floors">
+      <span class="icon">🏭</span> Factory Floors
+    </div>
+    <div class="nav-item" data-page="research">
+      <span class="icon">🔬</span> Research Lab
+    </div>
+    <div class="nav-section">Logistics</div>
+    <div class="nav-item" data-page="storage">
+      <span class="icon">📦</span> Storage Vault
+    </div>
+    <div class="nav-item" data-page="power">
+      <span class="icon">⚡</span> Power Grid
+    </div>
+    <div class="nav-section">Reference</div>
+    <div class="nav-item" data-page="codex">
+      <span class="icon">📖</span> Recipe Codex
+    </div>
+    <div class="nav-item" data-page="milestones">
+      <span class="icon">🏆</span> Milestones
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main id="main">
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard"></div>
+    <!-- Factory Floors -->
+    <div class="page" id="page-floors"></div>
+    <!-- Research Lab -->
+    <div class="page" id="page-research"></div>
+    <!-- Storage Vault -->
+    <div class="page" id="page-storage"></div>
+    <!-- Power Grid -->
+    <div class="page" id="page-power"></div>
+    <!-- Recipe Codex -->
+    <div class="page" id="page-codex"></div>
+    <!-- Milestones -->
+    <div class="page" id="page-milestones"></div>
+  </main>
+
+  <!-- STATUS BAR -->
+  <footer id="statusbar">
+    <div class="status-item">
+      <div class="status-dot green" id="status-dot"></div>
+      <span>All Systems Nominal</span>
+    </div>
+    <div class="status-item" style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+      <button class="btn btn-sm" style="font-size:10px;padding:2px 8px;opacity:0.6;" onclick="exportSave()" title="Export save file">💾 EXPORT</button>
+      <button class="btn btn-sm" style="font-size:10px;padding:2px 8px;opacity:0.6;" onclick="confirmNewRun()" title="Start fresh">🔄 NEW RUN</button>
+    </div>
+    <div class="status-item" id="status-alerts">
+      0 alerts
+    </div>
+    <div class="status-item">
+      <span id="status-tick">Tick: 0</span>
+    </div>
+    <div class="status-item" id="status-saved" style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);">
+    </div>
+  </footer>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   OK FACTORY - COMPLETE GAME ENGINE
+   ═══════════════════════════════════════════════════════════════ */
+
+const SAVE_VERSION = 1;
+const SAVE_KEY = 'factoryio_save';
+const BROWSER_ID_KEY = 'factoryio_bid';
+const SAVE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const AUTO_SAVE_INTERVAL = 10; // every 10 ticks (seconds)
+
+function getBrowserId() {
+  let bid = localStorage.getItem(BROWSER_ID_KEY);
+  if (!bid) {
+    bid = crypto.randomUUID();
+    localStorage.setItem(BROWSER_ID_KEY, bid);
+  }
+  return bid;
+}
+
+// ─── RESOURCE DEFINITIONS ─────────────────────────────────────
+const RESOURCES = {
+  // T0 - Raw Ores
+  iron_ore:       { name: 'Iron Ore',       tier: 0, value: 1,   color: '#8b6e5a', category: 'ore' },
+  copper_ore:     { name: 'Copper Ore',     tier: 0, value: 1,   color: '#c87533', category: 'ore' },
+  limestone:      { name: 'Limestone',      tier: 0, value: 1,   color: '#c9b98a', category: 'ore' },
+  coal:           { name: 'Coal',           tier: 0, value: 2,   color: '#3a3a3a', category: 'ore' },
+  crude_oil:      { name: 'Crude Oil',      tier: 0, value: 3,   color: '#1a1a2e', category: 'fluid' },
+  raw_quartz:     { name: 'Raw Quartz',     tier: 0, value: 2,   color: '#f0c8e8', category: 'ore' },
+  sulfur:         { name: 'Sulfur',         tier: 0, value: 2,   color: '#d4c847', category: 'ore' },
+  bauxite:        { name: 'Bauxite',        tier: 0, value: 2,   color: '#b85c3a', category: 'ore' },
+  caterium_ore:   { name: 'Caterium Ore',   tier: 0, value: 3,   color: '#f5d442', category: 'ore' },
+  uranium:        { name: 'Uranium',        tier: 0, value: 5,   color: '#4ade80', category: 'ore' },
+  nitrogen_gas:   { name: 'Nitrogen Gas',   tier: 0, value: 3,   color: '#a5b4fc', category: 'fluid' },
+  water:          { name: 'Water',          tier: 0, value: 0,   color: '#38bdf8', category: 'fluid' },
+
+  // T1 - Refined/Smelted
+  iron_ingot:     { name: 'Iron Ingot',     tier: 1, value: 5,   color: '#a0a0a0', category: 'ingot' },
+  copper_ingot:   { name: 'Copper Ingot',   tier: 1, value: 6,   color: '#e8943a', category: 'ingot' },
+  steel_ingot:    { name: 'Steel Ingot',    tier: 1, value: 12,  color: '#6b7280', category: 'ingot' },
+  concrete:       { name: 'Concrete',       tier: 1, value: 8,   color: '#9ca3af', category: 'ingot' },
+  quartz_crystal: { name: 'Quartz Crystal', tier: 1, value: 10,  color: '#f9a8d4', category: 'ingot' },
+  coke:           { name: 'Coke',           tier: 1, value: 8,   color: '#1f2937', category: 'ingot' },
+  silica:         { name: 'Silica',         tier: 1, value: 8,   color: '#e5e7eb', category: 'ingot' },
+  caterium_ingot: { name: 'Caterium Ingot', tier: 1, value: 15,  color: '#facc15', category: 'ingot' },
+  aluminum_ingot: { name: 'Aluminum Ingot', tier: 1, value: 14,  color: '#d1d5db', category: 'ingot' },
+  plastic:        { name: 'Plastic',        tier: 1, value: 12,  color: '#f3f4f6', category: 'material' },
+  rubber:         { name: 'Rubber',         tier: 1, value: 12,  color: '#1f2937', category: 'material' },
+  fuel:           { name: 'Fuel',           tier: 1, value: 10,  color: '#f59e0b', category: 'fluid' },
+  polymer_resin:  { name: 'Polymer Resin',  tier: 1, value: 6,   color: '#fdba74', category: 'material' },
+  petroleum_coke: { name: 'Petroleum Coke', tier: 1, value: 7,   color: '#374151', category: 'material' },
+  alumina_solution:{name: 'Alumina Solution',tier:1, value: 10,  color: '#e0e7ff', category: 'fluid' },
+  sulfuric_acid:  { name: 'Sulfuric Acid',  tier: 1, value: 12,  color: '#a3e635', category: 'fluid' },
+
+  // T2 - Basic Parts
+  iron_plate:     { name: 'Iron Plate',     tier: 2, value: 25,  color: '#9ca3af', category: 'part' },
+  iron_rod:       { name: 'Iron Rod',       tier: 2, value: 20,  color: '#a0a0a0', category: 'part' },
+  copper_wire:    { name: 'Copper Wire',    tier: 2, value: 28,  color: '#f59e0b', category: 'part' },
+  screw:          { name: 'Screw',          tier: 2, value: 15,  color: '#9ca3af', category: 'part' },
+  steel_beam:     { name: 'Steel Beam',     tier: 2, value: 50,  color: '#6b7280', category: 'part' },
+  steel_pipe:     { name: 'Steel Pipe',     tier: 2, value: 45,  color: '#6b7280', category: 'part' },
+  copper_sheet:   { name: 'Copper Sheet',   tier: 2, value: 35,  color: '#e8943a', category: 'part' },
+  quickwire:      { name: 'Quickwire',      tier: 2, value: 40,  color: '#facc15', category: 'part' },
+  cable:          { name: 'Cable',          tier: 2, value: 30,  color: '#374151', category: 'part' },
+  aluminum_sheet: { name: 'Aluminum Sheet', tier: 2, value: 55,  color: '#e5e7eb', category: 'part' },
+  alclad_sheet:   { name: 'Alclad Sheet',   tier: 2, value: 60,  color: '#d1d5db', category: 'part' },
+  empty_canister: { name: 'Empty Canister', tier: 2, value: 20,  color: '#f97316', category: 'part' },
+
+  // T3 - Components
+  rotor:            { name: 'Rotor',             tier: 3, value: 150,   color: '#6b7280', category: 'component' },
+  stator:           { name: 'Stator',            tier: 3, value: 180,   color: '#6b7280', category: 'component' },
+  motor:            { name: 'Motor',             tier: 3, value: 400,   color: '#4b5563', category: 'component' },
+  circuit_board:    { name: 'Circuit Board',     tier: 3, value: 250,   color: '#22c55e', category: 'component' },
+  modular_frame:    { name: 'Modular Frame',     tier: 3, value: 300,   color: '#6b7280', category: 'component' },
+  encased_beam:     { name: 'Encased Beam',      tier: 3, value: 200,   color: '#9ca3af', category: 'component' },
+  ai_limiter:       { name: 'AI Limiter',        tier: 3, value: 350,   color: '#a855f7', category: 'component' },
+  crystal_oscillator:{ name: 'Crystal Oscillator', tier: 3, value: 380, color: '#f9a8d4', category: 'component' },
+  electromagnetic_rod:{ name: 'EM Control Rod',  tier: 3, value: 320,   color: '#818cf8', category: 'component' },
+  heat_sink:        { name: 'Heat Sink',         tier: 3, value: 280,   color: '#d1d5db', category: 'component' },
+  fused_wire:       { name: 'Fused Wire',        tier: 3, value: 160,   color: '#f59e0b', category: 'component' },
+
+  // T4 - Complex
+  computer:              { name: 'Computer',             tier: 4, value: 1700,   color: '#3b82f6', category: 'complex' },
+  heavy_modular_frame:   { name: 'Heavy Mod. Frame',     tier: 4, value: 2200,   color: '#4b5563', category: 'complex' },
+  high_speed_connector:  { name: 'Hi-Speed Connector',   tier: 4, value: 1500,   color: '#06b6d4', category: 'complex' },
+  automated_wiring:      { name: 'Automated Wiring',     tier: 4, value: 1800,   color: '#f59e0b', category: 'complex' },
+  modular_engine:        { name: 'Modular Engine',       tier: 4, value: 2500,   color: '#6b7280', category: 'complex' },
+  adaptive_control:      { name: 'Adaptive Control',     tier: 4, value: 2800,   color: '#a855f7', category: 'complex' },
+  radio_control:         { name: 'Radio Control Unit',   tier: 4, value: 1900,   color: '#818cf8', category: 'complex' },
+  cooling_device:        { name: 'Cooling Device',       tier: 4, value: 2100,   color: '#38bdf8', category: 'complex' },
+  battery:               { name: 'Battery',              tier: 4, value: 1200,   color: '#fbbf24', category: 'complex' },
+  uranium_fuel_rod:      { name: 'Uranium Fuel Rod',     tier: 4, value: 3500,   color: '#4ade80', category: 'complex' },
+  pressure_tube:         { name: 'Pressure Tube',        tier: 4, value: 1400,   color: '#9ca3af', category: 'complex' },
+
+  // T5 - Advanced
+  supercomputer:         { name: 'Supercomputer',        tier: 5, value: 15000,  color: '#3b82f6', category: 'advanced' },
+  turbo_motor:           { name: 'Turbo Motor',          tier: 5, value: 25000,  color: '#ef4444', category: 'advanced' },
+  cooling_system:        { name: 'Cooling System',       tier: 5, value: 18000,  color: '#06b6d4', category: 'advanced' },
+  fused_frame:           { name: 'Fused Mod. Frame',     tier: 5, value: 22000,  color: '#6b7280', category: 'advanced' },
+  magnetic_field_gen:    { name: 'Mag. Field Generator', tier: 5, value: 20000,  color: '#a855f7', category: 'advanced' },
+  thermal_propulsion:    { name: 'Thermal Propulsion',   tier: 5, value: 28000,  color: '#f97316', category: 'advanced' },
+  plutonium_pellet:      { name: 'Plutonium Pellet',     tier: 5, value: 30000,  color: '#86efac', category: 'advanced' },
+  plutonium_fuel_rod:    { name: 'Plutonium Fuel Rod',   tier: 5, value: 35000,  color: '#22c55e', category: 'advanced' },
+  assembly_director:     { name: 'Assembly Director',    tier: 5, value: 32000,  color: '#fbbf24', category: 'advanced' },
+
+  // T6 - Elite
+  nuclear_pasta:         { name: 'Nuclear Pasta',        tier: 6, value: 150000, color: '#f97316', category: 'elite' },
+  quantum_oscillator:    { name: 'Quantum Oscillator',   tier: 6, value: 200000, color: '#e879f9', category: 'elite' },
+  neural_network:        { name: 'Neural Network Proc.', tier: 6, value: 250000, color: '#818cf8', category: 'elite' },
+  dark_matter_crystal:   { name: 'Dark Matter Crystal',  tier: 6, value: 350000, color: '#7c3aed', category: 'elite' },
+  singularity_cell:      { name: 'Singularity Cell',     tier: 6, value: 500000, color: '#dc2626', category: 'elite' },
+};
+
+// ─── MACHINE DEFINITIONS ──────────────────────────────────────
+const MACHINES = {
+  miner_mk1:     { name: 'Miner Mk.I',     power: 5,   slots: 0, tier: 0, category: 'extraction', desc: 'Extracts raw resources at 30/min' },
+  miner_mk2:     { name: 'Miner Mk.II',    power: 12,  slots: 0, tier: 2, category: 'extraction', desc: 'Extracts raw resources at 60/min' },
+  miner_mk3:     { name: 'Miner Mk.III',   power: 30,  slots: 0, tier: 4, category: 'extraction', desc: 'Extracts raw resources at 120/min' },
+  water_extractor:{ name: 'Water Extractor', power: 20, slots: 0, tier: 1, category: 'extraction', desc: 'Pumps water at 120/min' },
+  oil_extractor: { name: 'Oil Extractor',   power: 40,  slots: 0, tier: 3, category: 'extraction', desc: 'Extracts crude oil at 60/min' },
+  smelter:       { name: 'Smelter',         power: 4,   slots: 1, tier: 0, category: 'processing', desc: 'Smelts 1 ore into 1 ingot' },
+  foundry:       { name: 'Foundry',         power: 16,  slots: 2, tier: 2, category: 'processing', desc: 'Combines 2 inputs into alloys' },
+  constructor:   { name: 'Constructor',     power: 4,   slots: 1, tier: 0, category: 'production', desc: 'Crafts parts from 1 input' },
+  assembler:     { name: 'Assembler',       power: 15,  slots: 2, tier: 2, category: 'production', desc: 'Combines 2 inputs into components' },
+  manufacturer:  { name: 'Manufacturer',    power: 55,  slots: 4, tier: 3, category: 'production', desc: 'Complex production from 3-4 inputs' },
+  refinery:      { name: 'Refinery',        power: 30,  slots: 2, tier: 3, category: 'processing', desc: 'Processes fluids and solids' },
+  blender:       { name: 'Blender',         power: 75,  slots: 4, tier: 4, category: 'processing', desc: 'Advanced fluid mixing' },
+  particle_accelerator: { name: 'Particle Accelerator', power: 500, slots: 3, tier: 5, category: 'production', desc: 'Creates exotic materials' },
+  quantum_encoder:      { name: 'Quantum Encoder',      power: 1000,slots: 4, tier: 6, category: 'production', desc: 'Produces T6 elite products' },
+  biomass_burner:       { name: 'Biomass Burner',       power: -20, slots: 0, tier: 0, category: 'power', desc: 'Generates 20 MW from biomass' },
+  coal_generator:       { name: 'Coal Generator',       power: -75, slots: 0, tier: 2, category: 'power', desc: 'Generates 75 MW from coal + water' },
+  fuel_generator:       { name: 'Fuel Generator',       power: -150,slots: 0, tier: 3, category: 'power', desc: 'Generates 150 MW from fuel' },
+  nuclear_plant:        { name: 'Nuclear Power Plant',  power: -2500,slots: 0, tier: 5, category: 'power', desc: 'Generates 2500 MW from uranium fuel rods' },
+};
+
+// ─── RECIPE DEFINITIONS (60+) ──────────────────────────────
+const RECIPES = {
+  // === EXTRACTION (virtual recipes for miners) ===
+  mine_iron:     { name: 'Mine Iron Ore',      machine: 'miner_mk1', inputs: {}, outputs: { iron_ore: 30 }, time: 60, tier: 0 },
+  mine_copper:   { name: 'Mine Copper Ore',     machine: 'miner_mk1', inputs: {}, outputs: { copper_ore: 30 }, time: 60, tier: 0 },
+  mine_limestone:{ name: 'Mine Limestone',      machine: 'miner_mk1', inputs: {}, outputs: { limestone: 30 }, time: 60, tier: 0 },
+  mine_coal:     { name: 'Mine Coal',           machine: 'miner_mk1', inputs: {}, outputs: { coal: 30 }, time: 60, tier: 0 },
+  mine_quartz:   { name: 'Mine Raw Quartz',     machine: 'miner_mk1', inputs: {}, outputs: { raw_quartz: 30 }, time: 60, tier: 0 },
+  mine_sulfur:   { name: 'Mine Sulfur',         machine: 'miner_mk1', inputs: {}, outputs: { sulfur: 30 }, time: 60, tier: 0 },
+  mine_bauxite:  { name: 'Mine Bauxite',        machine: 'miner_mk1', inputs: {}, outputs: { bauxite: 30 }, time: 60, tier: 0 },
+  mine_caterium: { name: 'Mine Caterium Ore',   machine: 'miner_mk1', inputs: {}, outputs: { caterium_ore: 30 }, time: 60, tier: 1 },
+  mine_uranium:  { name: 'Mine Uranium',        machine: 'miner_mk1', inputs: {}, outputs: { uranium: 12 }, time: 60, tier: 5 },
+
+  mine_iron_2:     { name: 'Mine Iron Ore II',    machine: 'miner_mk2', inputs: {}, outputs: { iron_ore: 60 }, time: 60, tier: 2 },
+  mine_copper_2:   { name: 'Mine Copper Ore II',  machine: 'miner_mk2', inputs: {}, outputs: { copper_ore: 60 }, time: 60, tier: 2 },
+  mine_limestone_2:{ name: 'Mine Limestone II',   machine: 'miner_mk2', inputs: {}, outputs: { limestone: 60 }, time: 60, tier: 2 },
+  mine_coal_2:     { name: 'Mine Coal II',        machine: 'miner_mk2', inputs: {}, outputs: { coal: 60 }, time: 60, tier: 2 },
+  mine_quartz_2:   { name: 'Mine Raw Quartz II',  machine: 'miner_mk2', inputs: {}, outputs: { raw_quartz: 60 }, time: 60, tier: 2 },
+  mine_sulfur_2:   { name: 'Mine Sulfur II',      machine: 'miner_mk2', inputs: {}, outputs: { sulfur: 60 }, time: 60, tier: 2 },
+  mine_bauxite_2:  { name: 'Mine Bauxite II',     machine: 'miner_mk2', inputs: {}, outputs: { bauxite: 60 }, time: 60, tier: 2 },
+  mine_caterium_2: { name: 'Mine Caterium II',    machine: 'miner_mk2', inputs: {}, outputs: { caterium_ore: 60 }, time: 60, tier: 2 },
+
+  mine_iron_3:     { name: 'Mine Iron Ore III',   machine: 'miner_mk3', inputs: {}, outputs: { iron_ore: 120 }, time: 60, tier: 4 },
+  mine_copper_3:   { name: 'Mine Copper Ore III',  machine: 'miner_mk3', inputs: {}, outputs: { copper_ore: 120 }, time: 60, tier: 4 },
+  mine_coal_3:     { name: 'Mine Coal III',        machine: 'miner_mk3', inputs: {}, outputs: { coal: 120 }, time: 60, tier: 4 },
+
+  extract_water: { name: 'Extract Water',      machine: 'water_extractor', inputs: {}, outputs: { water: 120 }, time: 60, tier: 1 },
+  extract_oil:   { name: 'Extract Crude Oil',  machine: 'oil_extractor',   inputs: {}, outputs: { crude_oil: 60 }, time: 60, tier: 3 },
+  extract_nitrogen:{ name: 'Extract Nitrogen',  machine: 'oil_extractor',  inputs: {}, outputs: { nitrogen_gas: 60 }, time: 60, tier: 4 },
+
+  // === T1 SMELTING ===
+  smelt_iron:    { name: 'Smelt Iron',         machine: 'smelter', inputs: { iron_ore: 30 }, outputs: { iron_ingot: 30 }, time: 60, tier: 0 },
+  smelt_copper:  { name: 'Smelt Copper',       machine: 'smelter', inputs: { copper_ore: 30 }, outputs: { copper_ingot: 30 }, time: 60, tier: 0 },
+  smelt_caterium:{ name: 'Smelt Caterium',     machine: 'smelter', inputs: { caterium_ore: 30 }, outputs: { caterium_ingot: 15 }, time: 60, tier: 1 },
+  make_concrete: { name: 'Make Concrete',      machine: 'constructor', inputs: { limestone: 45 }, outputs: { concrete: 15 }, time: 60, tier: 0 },
+  make_quartz:   { name: 'Cut Quartz Crystal', machine: 'constructor', inputs: { raw_quartz: 30 }, outputs: { quartz_crystal: 22 }, time: 60, tier: 1 },
+  make_silica:   { name: 'Make Silica',        machine: 'constructor', inputs: { raw_quartz: 22 }, outputs: { silica: 37 }, time: 60, tier: 1 },
+
+  // === T1 FOUNDRY ===
+  smelt_steel:   { name: 'Smelt Steel',        machine: 'foundry', inputs: { iron_ore: 45, coal: 45 }, outputs: { steel_ingot: 30 }, time: 60, tier: 2 },
+  smelt_aluminum: { name: 'Smelt Aluminum',    machine: 'foundry', inputs: { alumina_solution: 60, coal: 30 }, outputs: { aluminum_ingot: 20 }, time: 60, tier: 3 },
+
+  // === T1 REFINERY ===
+  refine_oil_plastic: { name: 'Refine Plastic',   machine: 'refinery', inputs: { crude_oil: 30 }, outputs: { plastic: 20, polymer_resin: 10 }, time: 60, tier: 3 },
+  refine_oil_rubber:  { name: 'Refine Rubber',    machine: 'refinery', inputs: { crude_oil: 30 }, outputs: { rubber: 20, polymer_resin: 10 }, time: 60, tier: 3 },
+  refine_oil_fuel:    { name: 'Refine Fuel',      machine: 'refinery', inputs: { crude_oil: 60 }, outputs: { fuel: 40, polymer_resin: 30 }, time: 60, tier: 3 },
+  refine_coke:        { name: 'Refine Pet. Coke', machine: 'refinery', inputs: { polymer_resin: 40 }, outputs: { petroleum_coke: 60 }, time: 60, tier: 3 },
+  refine_alumina:     { name: 'Make Alumina Sol.', machine: 'refinery', inputs: { bauxite: 70, water: 100 }, outputs: { alumina_solution: 100 }, time: 60, tier: 3 },
+  refine_sulfuric:    { name: 'Make Sulfuric Acid',machine: 'refinery', inputs: { sulfur: 50, water: 50 }, outputs: { sulfuric_acid: 100 }, time: 60, tier: 3 },
+
+  // === T2 CONSTRUCTOR ===
+  make_iron_plate:  { name: 'Make Iron Plate',    machine: 'constructor', inputs: { iron_ingot: 30 }, outputs: { iron_plate: 20 }, time: 60, tier: 0 },
+  make_iron_rod:    { name: 'Make Iron Rod',      machine: 'constructor', inputs: { iron_ingot: 15 }, outputs: { iron_rod: 15 }, time: 60, tier: 0 },
+  make_copper_wire: { name: 'Make Copper Wire',   machine: 'constructor', inputs: { copper_ingot: 15 }, outputs: { copper_wire: 30 }, time: 60, tier: 0 },
+  make_screw:       { name: 'Make Screw',         machine: 'constructor', inputs: { iron_rod: 10 }, outputs: { screw: 40 }, time: 60, tier: 0 },
+  make_cable:       { name: 'Make Cable',         machine: 'constructor', inputs: { copper_wire: 20 }, outputs: { cable: 10 }, time: 60, tier: 0 },
+  make_steel_beam:  { name: 'Make Steel Beam',    machine: 'constructor', inputs: { steel_ingot: 12 }, outputs: { steel_beam: 12 }, time: 60, tier: 2 },
+  make_steel_pipe:  { name: 'Make Steel Pipe',    machine: 'constructor', inputs: { steel_ingot: 10 }, outputs: { steel_pipe: 15 }, time: 60, tier: 2 },
+  make_copper_sheet:{ name: 'Make Copper Sheet',  machine: 'constructor', inputs: { copper_ingot: 20 }, outputs: { copper_sheet: 10 }, time: 60, tier: 1 },
+  make_quickwire:   { name: 'Make Quickwire',     machine: 'constructor', inputs: { caterium_ingot: 12 }, outputs: { quickwire: 60 }, time: 60, tier: 1 },
+  make_empty_can:   { name: 'Make Empty Canister',machine: 'constructor', inputs: { plastic: 20 }, outputs: { empty_canister: 20 }, time: 60, tier: 3 },
+  make_aluminum_sheet:{ name: 'Make Aluminum Sheet', machine: 'constructor', inputs: { aluminum_ingot: 20 }, outputs: { aluminum_sheet: 15 }, time: 60, tier: 3 },
+  make_alclad:      { name: 'Make Alclad Sheet',  machine: 'constructor', inputs: { aluminum_ingot: 20 }, outputs: { alclad_sheet: 10 }, time: 60, tier: 3 },
+
+  // === T3 ASSEMBLER ===
+  make_rotor:         { name: 'Make Rotor',           machine: 'assembler', inputs: { iron_rod: 20, screw: 100 }, outputs: { rotor: 4 }, time: 60, tier: 2 },
+  make_stator:        { name: 'Make Stator',          machine: 'assembler', inputs: { steel_pipe: 15, copper_wire: 40 }, outputs: { stator: 5 }, time: 60, tier: 2 },
+  make_motor:         { name: 'Make Motor',           machine: 'assembler', inputs: { rotor: 10, stator: 10 }, outputs: { motor: 5 }, time: 60, tier: 2 },
+  make_circuit_board: { name: 'Make Circuit Board',   machine: 'assembler', inputs: { copper_sheet: 15, plastic: 30 }, outputs: { circuit_board: 7 }, time: 60, tier: 3 },
+  make_modular_frame: { name: 'Make Modular Frame',   machine: 'assembler', inputs: { iron_plate: 18, iron_rod: 12 }, outputs: { modular_frame: 2 }, time: 60, tier: 2 },
+  make_encased_beam:  { name: 'Make Encased Beam',    machine: 'assembler', inputs: { steel_beam: 12, concrete: 20 }, outputs: { encased_beam: 6 }, time: 60, tier: 2 },
+  make_ai_limiter:    { name: 'Make AI Limiter',      machine: 'assembler', inputs: { circuit_board: 5, quickwire: 100 }, outputs: { ai_limiter: 2 }, time: 60, tier: 3 },
+  make_crystal_osc:   { name: 'Make Crystal Oscillator', machine: 'assembler', inputs: { quartz_crystal: 18, cable: 14 }, outputs: { crystal_oscillator: 2 }, time: 60, tier: 2 },
+  make_em_rod:        { name: 'Make EM Control Rod',  machine: 'assembler', inputs: { stator: 6, ai_limiter: 4 }, outputs: { electromagnetic_rod: 4 }, time: 60, tier: 3 },
+  make_heat_sink:     { name: 'Make Heat Sink',       machine: 'assembler', inputs: { alclad_sheet: 20, copper_sheet: 15 }, outputs: { heat_sink: 6 }, time: 60, tier: 3 },
+  make_fused_wire:    { name: 'Make Fused Wire',      machine: 'assembler', inputs: { copper_wire: 40, caterium_ingot: 10 }, outputs: { fused_wire: 20 }, time: 60, tier: 2 },
+
+  // === T4 MANUFACTURER ===
+  make_computer:    { name: 'Make Computer',           machine: 'manufacturer', inputs: { circuit_board: 25, cable: 22, plastic: 45, screw: 130 }, outputs: { computer: 2 }, time: 60, tier: 3 },
+  make_heavy_frame: { name: 'Make Heavy Mod. Frame',   machine: 'manufacturer', inputs: { modular_frame: 10, steel_pipe: 30, encased_beam: 10, screw: 200 }, outputs: { heavy_modular_frame: 2 }, time: 60, tier: 3 },
+  make_hsc:         { name: 'Make Hi-Speed Connector', machine: 'manufacturer', inputs: { quickwire: 210, cable: 37, circuit_board: 4 }, outputs: { high_speed_connector: 3 }, time: 60, tier: 3 },
+  make_auto_wiring: { name: 'Make Automated Wiring',   machine: 'manufacturer', inputs: { stator: 5, cable: 50, copper_wire: 100 }, outputs: { automated_wiring: 4 }, time: 60, tier: 3 },
+  make_mod_engine:  { name: 'Make Modular Engine',     machine: 'manufacturer', inputs: { motor: 5, rubber: 50, modular_frame: 2 }, outputs: { modular_engine: 1 }, time: 60, tier: 3 },
+  make_adaptive:    { name: 'Make Adaptive Control',   machine: 'manufacturer', inputs: { automated_wiring: 7, circuit_board: 7, heavy_modular_frame: 1, computer: 1 }, outputs: { adaptive_control: 1 }, time: 60, tier: 4 },
+  make_radio:       { name: 'Make Radio Control Unit', machine: 'manufacturer', inputs: { aluminum_sheet: 32, crystal_oscillator: 1, computer: 1 }, outputs: { radio_control: 2 }, time: 60, tier: 4 },
+  make_cooling:     { name: 'Make Cooling Device',     machine: 'manufacturer', inputs: { heat_sink: 10, motor: 2, nitrogen_gas: 40 }, outputs: { cooling_device: 2 }, time: 60, tier: 4 },
+  make_battery:     { name: 'Make Battery',            machine: 'manufacturer', inputs: { sulfuric_acid: 50, alumina_solution: 40, aluminum_sheet: 10 }, outputs: { battery: 4 }, time: 60, tier: 4 },
+  make_pressure:    { name: 'Make Pressure Tube',      machine: 'manufacturer', inputs: { steel_pipe: 20, copper_sheet: 10, rubber: 10 }, outputs: { pressure_tube: 4 }, time: 60, tier: 3 },
+  make_uranium_rod: { name: 'Make Uranium Fuel Rod',   machine: 'manufacturer', inputs: { uranium: 50, encased_beam: 3, electromagnetic_rod: 5 }, outputs: { uranium_fuel_rod: 1 }, time: 120, tier: 5 },
+
+  // === T5 MANUFACTURER / BLENDER ===
+  make_supercomputer:  { name: 'Make Supercomputer',      machine: 'manufacturer', inputs: { computer: 4, ai_limiter: 4, high_speed_connector: 10, plastic: 80 }, outputs: { supercomputer: 1 }, time: 120, tier: 4 },
+  make_turbo_motor:    { name: 'Make Turbo Motor',        machine: 'manufacturer', inputs: { cooling_device: 4, motor: 4, modular_engine: 2, rubber: 48 }, outputs: { turbo_motor: 1 }, time: 120, tier: 5 },
+  make_cooling_sys:    { name: 'Make Cooling System',     machine: 'blender', inputs: { heat_sink: 10, rubber: 20, water: 50, nitrogen_gas: 40 }, outputs: { cooling_system: 2 }, time: 60, tier: 4 },
+  make_fused_frame:    { name: 'Make Fused Mod. Frame',   machine: 'blender', inputs: { heavy_modular_frame: 2, aluminum_sheet: 40, nitrogen_gas: 60, steel_pipe: 20 }, outputs: { fused_frame: 1 }, time: 120, tier: 5 },
+  make_mag_gen:        { name: 'Make Mag. Field Gen.',    machine: 'manufacturer', inputs: { turbo_motor: 1, electromagnetic_rod: 5, battery: 5 }, outputs: { magnetic_field_gen: 1 }, time: 120, tier: 5 },
+  make_thermal:        { name: 'Make Thermal Propulsion', machine: 'manufacturer', inputs: { turbo_motor: 2, modular_engine: 2, cooling_system: 3, fused_frame: 1 }, outputs: { thermal_propulsion: 1 }, time: 180, tier: 5 },
+  make_plut_pellet:    { name: 'Make Plutonium Pellet',   machine: 'particle_accelerator', inputs: { uranium: 100, sulfuric_acid: 100 }, outputs: { plutonium_pellet: 1 }, time: 120, tier: 5 },
+  make_plut_rod:       { name: 'Make Plutonium Fuel Rod', machine: 'manufacturer', inputs: { plutonium_pellet: 10, encased_beam: 5, steel_beam: 20, copper_wire: 50 }, outputs: { plutonium_fuel_rod: 1 }, time: 180, tier: 5 },
+  make_assembly_dir:   { name: 'Make Assembly Director',  machine: 'manufacturer', inputs: { adaptive_control: 2, supercomputer: 1, heavy_modular_frame: 2 }, outputs: { assembly_director: 1 }, time: 120, tier: 5 },
+
+  // === T6 PARTICLE ACCELERATOR / QUANTUM ENCODER ===
+  make_nuclear_pasta:  { name: 'Make Nuclear Pasta',      machine: 'particle_accelerator', inputs: { copper_sheet: 200, pressure_tube: 10, sulfuric_acid: 50 }, outputs: { nuclear_pasta: 1 }, time: 180, tier: 5 },
+  make_quantum_osc:    { name: 'Make Quantum Oscillator', machine: 'quantum_encoder', inputs: { nuclear_pasta: 2, supercomputer: 2, crystal_oscillator: 10, dark_matter_crystal: 1 }, outputs: { quantum_oscillator: 1 }, time: 240, tier: 6 },
+  make_neural_net:     { name: 'Make Neural Network Proc.', machine: 'quantum_encoder', inputs: { supercomputer: 4, ai_limiter: 8, quickwire: 1000, assembly_director: 1 }, outputs: { neural_network: 1 }, time: 240, tier: 6 },
+  make_dark_matter:    { name: 'Make Dark Matter Crystal', machine: 'particle_accelerator', inputs: { nuclear_pasta: 1, magnetic_field_gen: 2, plutonium_pellet: 5 }, outputs: { dark_matter_crystal: 1 }, time: 300, tier: 6 },
+  make_singularity:    { name: 'Make Singularity Cell',   machine: 'quantum_encoder', inputs: { dark_matter_crystal: 3, quantum_oscillator: 2, neural_network: 1, nuclear_pasta: 5 }, outputs: { singularity_cell: 1 }, time: 360, tier: 6 },
+
+  // === POWER GENERATION (virtual) ===
+  burn_biomass:    { name: 'Burn Biomass',         machine: 'biomass_burner', inputs: { limestone: 20 }, outputs: {}, time: 60, tier: 0, isPower: true, powerGen: 20 },
+  burn_coal:       { name: 'Burn Coal',            machine: 'coal_generator', inputs: { coal: 15, water: 45 }, outputs: {}, time: 60, tier: 2, isPower: true, powerGen: 75 },
+  burn_fuel:       { name: 'Burn Fuel',            machine: 'fuel_generator', inputs: { fuel: 12 }, outputs: {}, time: 60, tier: 3, isPower: true, powerGen: 150 },
+  burn_uranium:    { name: 'Nuclear Fission',      machine: 'nuclear_plant', inputs: { uranium_fuel_rod: 1, water: 200 }, outputs: {}, time: 300, tier: 5, isPower: true, powerGen: 2500 },
+};
+
+// Alt Recipes (unlocked via research)
+const ALT_RECIPES = {
+  alt_steel_ingot:    { name: 'Alt: Coke Steel',       machine: 'foundry',    inputs: { iron_ore: 45, petroleum_coke: 60 }, outputs: { steel_ingot: 40 }, time: 60, tier: 3, unlockResearch: 'alt_steel' },
+  alt_iron_plate:     { name: 'Alt: Coated Iron Plate', machine: 'assembler', inputs: { iron_ingot: 20, plastic: 10 }, outputs: { iron_plate: 30 }, time: 60, tier: 3, unlockResearch: 'alt_iron_plate' },
+  alt_circuit_board:  { name: 'Alt: Silicon CB',       machine: 'assembler',  inputs: { copper_sheet: 20, silica: 20 }, outputs: { circuit_board: 10 }, time: 60, tier: 3, unlockResearch: 'alt_circuit' },
+  alt_screw:          { name: 'Alt: Cast Screw',       machine: 'constructor',inputs: { iron_ingot: 12 }, outputs: { screw: 50 }, time: 60, tier: 2, unlockResearch: 'alt_screw' },
+  alt_wire:           { name: 'Alt: Fused Copper Wire',machine: 'assembler',  inputs: { copper_ingot: 10, caterium_ingot: 5 }, outputs: { copper_wire: 90 }, time: 60, tier: 2, unlockResearch: 'alt_wire' },
+  alt_computer:       { name: 'Alt: Crystal Computer', machine: 'manufacturer', inputs: { circuit_board: 10, crystal_oscillator: 3, cable: 20 }, outputs: { computer: 3 }, time: 60, tier: 4, unlockResearch: 'alt_computer' },
+  alt_heavy_frame:    { name: 'Alt: Heavy Encased Fr.', machine: 'manufacturer', inputs: { modular_frame: 8, encased_beam: 20, steel_pipe: 26, concrete: 40 }, outputs: { heavy_modular_frame: 3 }, time: 60, tier: 4, unlockResearch: 'alt_heavy_frame' },
+  alt_motor:          { name: 'Alt: Rigor Motor',      machine: 'manufacturer', inputs: { rotor: 3, stator: 3, crystal_oscillator: 1 }, outputs: { motor: 6 }, time: 60, tier: 3, unlockResearch: 'alt_motor' },
+};
+
+// ─── RESEARCH TREE ─────────────────────────────────────────
+const RESEARCH = {
+  // Tier 1
+  logistics_1:   { name: 'Logistics Mk.I',       tier: 1, cost: { iron_plate: 50, copper_wire: 30 }, prereqs: [], desc: 'Unlock Water Extractor & Copper Sheet', unlocks: ['water_extractor','extract_water','make_copper_sheet'], time: 30 },
+  caterium_proc: { name: 'Caterium Processing',   tier: 1, cost: { iron_ingot: 50, copper_ingot: 30 }, prereqs: [], desc: 'Unlock Caterium smelting & Quickwire', unlocks: ['smelt_caterium','make_quickwire','mine_caterium'], time: 45 },
+  quartz_proc:   { name: 'Quartz Processing',     tier: 1, cost: { iron_plate: 80, concrete: 20 }, prereqs: [], desc: 'Unlock Crystal & Silica production', unlocks: ['make_quartz','make_silica'], time: 45 },
+
+  // Tier 2
+  steel_prod:    { name: 'Steel Production',      tier: 2, cost: { iron_plate: 200, concrete: 100, copper_wire: 100 }, prereqs: ['logistics_1'], desc: 'Unlock Foundry, Steel Ingots, Beams & Pipes', unlocks: ['foundry','smelt_steel','make_steel_beam','make_steel_pipe'], time: 60 },
+  assembly:      { name: 'Assembly',              tier: 2, cost: { iron_plate: 150, iron_rod: 100, screw: 200 }, prereqs: ['logistics_1'], desc: 'Unlock Assembler & component recipes', unlocks: ['assembler','make_rotor','make_modular_frame','make_encased_beam','make_crystal_osc','make_fused_wire'], time: 60 },
+  coal_power:    { name: 'Coal Power',            tier: 2, cost: { iron_plate: 100, cable: 50 }, prereqs: ['logistics_1'], desc: 'Unlock Coal Generator', unlocks: ['coal_generator','burn_coal'], time: 45 },
+  overclock_1:   { name: 'Overclock Mk.I',       tier: 2, cost: { iron_plate: 150, copper_wire: 100, screw: 100 }, prereqs: ['logistics_1'], desc: 'Unlock x1.25 clock speed (156% power cost)', unlocks: ['overclock_1'], time: 60 },
+  crank_mk2:     { name: 'Crank Mk.II',          tier: 2, cost: { iron_plate: 80, copper_wire: 60 }, prereqs: ['logistics_1'], desc: 'Crank generates 8 MW/click (max 400)', unlocks: ['crank_mk2'], time: 30 },
+  mk2_miners:    { name: 'Miner Mk.II',           tier: 2, cost: { iron_plate: 200, concrete: 100, copper_wire: 200 }, prereqs: ['logistics_1'], desc: 'Unlock Mk.II miners (60/min)', unlocks: ['miner_mk2','mine_iron_2','mine_copper_2','mine_limestone_2','mine_coal_2','mine_quartz_2','mine_sulfur_2','mine_bauxite_2','mine_caterium_2'], time: 60 },
+  alt_screw:     { name: 'Alt: Cast Screw',       tier: 2, cost: { iron_rod: 200, screw: 500 }, prereqs: ['assembly'], desc: 'Alternate screw recipe (more efficient)', unlocks: ['alt_screw'], time: 90 },
+  alt_wire:      { name: 'Alt: Fused Wire',       tier: 2, cost: { copper_wire: 300, caterium_ingot: 50 }, prereqs: ['caterium_proc','assembly'], desc: 'Alternate copper wire recipe', unlocks: ['alt_wire'], time: 90 },
+
+  // Tier 3
+  oil_processing:{ name: 'Oil Processing',        tier: 3, cost: { steel_beam: 50, motor: 10, circuit_board: 15 }, prereqs: ['steel_prod','assembly'], desc: 'Unlock Refinery & Oil products', unlocks: ['refinery','oil_extractor','extract_oil','refine_oil_plastic','refine_oil_rubber','refine_oil_fuel','refine_coke','make_empty_can'], time: 120 },
+  electronics:   { name: 'Electronics',           tier: 3, cost: { copper_sheet: 100, quickwire: 200, rotor: 20 }, prereqs: ['assembly','caterium_proc'], desc: 'Unlock Stator, Motor, Circuit Board, AI Limiter', unlocks: ['make_stator','make_motor','make_circuit_board','make_ai_limiter','make_em_rod'], time: 120 },
+  advanced_steel:{ name: 'Advanced Steel',        tier: 3, cost: { steel_beam: 100, encased_beam: 30, modular_frame: 10 }, prereqs: ['steel_prod'], desc: 'Unlock Heavy Mod Frame & Pressure Tube', unlocks: ['make_heavy_frame','make_pressure'], time: 120 },
+  fuel_power:    { name: 'Fuel Power',            tier: 3, cost: { motor: 10, circuit_board: 20, steel_pipe: 50 }, prereqs: ['oil_processing'], desc: 'Unlock Fuel Generator', unlocks: ['fuel_generator','burn_fuel'], time: 90 },
+  overclock_2:   { name: 'Overclock Mk.II',      tier: 3, cost: { motor: 5, circuit_board: 10, steel_beam: 30 }, prereqs: ['overclock_1','electronics'], desc: 'Unlock x1.5 clock speed (225% power cost)', unlocks: ['overclock_2'], time: 90 },
+  crank_mk3:     { name: 'Crank Mk.III',         tier: 3, cost: { motor: 3, circuit_board: 8, steel_beam: 15 }, prereqs: ['crank_mk2','electronics'], desc: 'Crank generates 20 MW/click (max 800)', unlocks: ['crank_mk3'], time: 60 },
+  manufacturer_tech: { name: 'Manufacturer',      tier: 3, cost: { motor: 15, circuit_board: 25, steel_beam: 40 }, prereqs: ['electronics','oil_processing'], desc: 'Unlock Manufacturer building', unlocks: ['manufacturer','make_computer','make_hsc','make_auto_wiring','make_mod_engine'], time: 120 },
+  alumina_proc:  { name: 'Alumina Processing',    tier: 3, cost: { circuit_board: 30, motor: 15, steel_pipe: 50 }, prereqs: ['oil_processing'], desc: 'Unlock Alumina & Aluminum production', unlocks: ['refine_alumina','smelt_aluminum','make_aluminum_sheet','make_alclad','make_heat_sink'], time: 120 },
+  sulfur_proc:   { name: 'Sulfuric Acid',         tier: 3, cost: { circuit_board: 20, steel_pipe: 40, rubber: 50 }, prereqs: ['oil_processing'], desc: 'Unlock Sulfuric Acid refining', unlocks: ['refine_sulfuric'], time: 90 },
+  alt_steel:     { name: 'Alt: Coke Steel',       tier: 3, cost: { steel_ingot: 300, petroleum_coke: 200 }, prereqs: ['oil_processing','steel_prod'], desc: 'Alternate steel recipe using coke', unlocks: ['alt_steel_ingot'], time: 90 },
+  alt_iron_plate:{ name: 'Alt: Coated Plate',     tier: 3, cost: { iron_plate: 500, plastic: 100 }, prereqs: ['oil_processing'], desc: 'Alternate iron plate recipe', unlocks: ['alt_iron_plate'], time: 90 },
+
+  // Tier 4
+  mk3_miners:    { name: 'Miner Mk.III',          tier: 4, cost: { computer: 5, heavy_modular_frame: 3, steel_beam: 100 }, prereqs: ['manufacturer_tech','advanced_steel'], desc: 'Unlock Mk.III miners (120/min)', unlocks: ['miner_mk3','mine_iron_3','mine_copper_3','mine_coal_3'], time: 180 },
+  advanced_computing: { name: 'Adv. Computing',   tier: 4, cost: { computer: 10, ai_limiter: 10, high_speed_connector: 5 }, prereqs: ['manufacturer_tech'], desc: 'Unlock Supercomputer, Adaptive Control, Radio Control', unlocks: ['make_supercomputer','make_adaptive','make_radio'], time: 180 },
+  nitrogen:      { name: 'Nitrogen Extraction',    tier: 4, cost: { computer: 5, motor: 20, steel_pipe: 100 }, prereqs: ['manufacturer_tech','alumina_proc'], desc: 'Unlock Nitrogen Gas & Blender', unlocks: ['extract_nitrogen','blender','make_cooling','make_cooling_sys','make_fused_frame'], time: 180 },
+  batteries:     { name: 'Battery Tech',          tier: 4, cost: { circuit_board: 50, sulfuric_acid: 200, aluminum_sheet: 30 }, prereqs: ['sulfur_proc','alumina_proc'], desc: 'Unlock Battery production', unlocks: ['make_battery'], time: 150 },
+  alt_circuit:   { name: 'Alt: Silicon Circuit',  tier: 4, cost: { circuit_board: 200, silica: 300 }, prereqs: ['manufacturer_tech','quartz_proc'], desc: 'Silicon-based circuit board recipe', unlocks: ['alt_circuit_board'], time: 120 },
+  alt_computer:  { name: 'Alt: Crystal Computer', tier: 4, cost: { computer: 15, crystal_oscillator: 10 }, prereqs: ['advanced_computing'], desc: 'Crystal-based computer recipe', unlocks: ['alt_computer'], time: 120 },
+  alt_heavy_frame:{ name: 'Alt: Heavy Encased',   tier: 4, cost: { heavy_modular_frame: 10, encased_beam: 50 }, prereqs: ['advanced_steel','manufacturer_tech'], desc: 'More efficient heavy frame recipe', unlocks: ['alt_heavy_frame'], time: 120 },
+  alt_motor:     { name: 'Alt: Rigor Motor',      tier: 4, cost: { motor: 30, crystal_oscillator: 5 }, prereqs: ['manufacturer_tech'], desc: 'More efficient motor recipe', unlocks: ['alt_motor'], time: 120 },
+
+  // Tier 5
+  nuclear_power: { name: 'Nuclear Power',         tier: 5, cost: { supercomputer: 5, heavy_modular_frame: 10, high_speed_connector: 20, electromagnetic_rod: 15 }, prereqs: ['advanced_computing','advanced_steel'], desc: 'Unlock Nuclear Power Plant & Uranium processing', unlocks: ['nuclear_plant','mine_uranium','burn_uranium','make_uranium_rod'], time: 300 },
+  overclock_3:   { name: 'Overclock Mk.III',     tier: 4, cost: { computer: 3, heavy_modular_frame: 2, cooling_device: 5 }, prereqs: ['overclock_2','nitrogen'], desc: 'Unlock x1.75 & x2 clock speed (306-400% power)', unlocks: ['overclock_3'], time: 150 },
+  crank_mk4:     { name: 'Crank Mk.IV',          tier: 4, cost: { computer: 2, heavy_modular_frame: 1, cooling_device: 3 }, prereqs: ['crank_mk3','nitrogen'], desc: 'Crank generates 50 MW/click (max 1500)', unlocks: ['crank_mk4'], time: 90 },
+  turbo_tech:    { name: 'Turbo Technology',       tier: 5, cost: { supercomputer: 3, cooling_device: 5, modular_engine: 5, fused_frame: 2 }, prereqs: ['nitrogen','advanced_computing'], desc: 'Unlock Turbo Motor & advanced engines', unlocks: ['make_turbo_motor','make_thermal'], time: 300 },
+  mag_field:     { name: 'Magnetic Field Tech',   tier: 5, cost: { turbo_motor: 3, electromagnetic_rod: 20, battery: 15 }, prereqs: ['turbo_tech','batteries'], desc: 'Unlock Magnetic Field Generator', unlocks: ['make_mag_gen'], time: 300 },
+  particle_tech: { name: 'Particle Acceleration', tier: 5, cost: { supercomputer: 5, turbo_motor: 2, electromagnetic_rod: 10 }, prereqs: ['turbo_tech','nuclear_power'], desc: 'Unlock Particle Accelerator & Nuclear Pasta', unlocks: ['particle_accelerator','make_nuclear_pasta','make_plut_pellet'], time: 300 },
+  assembly_sys:  { name: 'Assembly Direction',    tier: 5, cost: { adaptive_control: 5, supercomputer: 3, heavy_modular_frame: 5 }, prereqs: ['advanced_computing','advanced_steel'], desc: 'Unlock Assembly Director System', unlocks: ['make_assembly_dir'] , time: 240 },
+  plut_fuel:     { name: 'Plutonium Processing',  tier: 5, cost: { plutonium_pellet: 5, encased_beam: 20, steel_beam: 50 }, prereqs: ['particle_tech'], desc: 'Unlock Plutonium Fuel Rods', unlocks: ['make_plut_rod'], time: 300 },
+
+  // Tier 6
+  quantum_tech:  { name: 'Quantum Encoding',      tier: 6, cost: { nuclear_pasta: 5, supercomputer: 10, turbo_motor: 5, magnetic_field_gen: 3 }, prereqs: ['particle_tech','mag_field'], desc: 'Unlock Quantum Encoder & Dark Matter', unlocks: ['quantum_encoder','make_dark_matter','make_quantum_osc','make_neural_net'], time: 600 },
+  singularity:   { name: 'Singularity Theory',    tier: 6, cost: { dark_matter_crystal: 3, quantum_oscillator: 5, neural_network: 3, nuclear_pasta: 10 }, prereqs: ['quantum_tech'], desc: 'Unlock Singularity Cell — the ultimate product', unlocks: ['make_singularity'], time: 900 },
+};
+
+// ─── MILESTONES ──────────────────────────────────────────
+const MILESTONES = [
+  { id: 'm1',  name: 'First Steps',          desc: 'Produce 100 Iron Plates',         check: s => (s.totalProduced.iron_plate||0) >= 100, reward: 'efficiency', rewardVal: 0.02 },
+  { id: 'm2',  name: 'Copper Baron',          desc: 'Produce 500 Copper Wire',         check: s => (s.totalProduced.copper_wire||0) >= 500, reward: 'efficiency', rewardVal: 0.02 },
+  { id: 'm3',  name: 'Steel Worker',          desc: 'Produce 200 Steel Beams',         check: s => (s.totalProduced.steel_beam||0) >= 200, reward: 'efficiency', rewardVal: 0.02 },
+  { id: 'm4',  name: 'Mass Production',       desc: 'Have 20+ active machines',        check: s => s.totalMachines >= 20, reward: 'efficiency', rewardVal: 0.03 },
+  { id: 'm5',  name: 'Oil Tycoon',            desc: 'Produce 500 Plastic',             check: s => (s.totalProduced.plastic||0) >= 500, reward: 'efficiency', rewardVal: 0.02 },
+  { id: 'm6',  name: 'Circuit Master',        desc: 'Produce 100 Circuit Boards',      check: s => (s.totalProduced.circuit_board||0) >= 100, reward: 'efficiency', rewardVal: 0.03 },
+  { id: 'm7',  name: 'Computing Power',       desc: 'Produce 10 Computers',            check: s => (s.totalProduced.computer||0) >= 10, reward: 'efficiency', rewardVal: 0.03 },
+  { id: 'm8',  name: 'Heavy Industry',        desc: 'Produce 10 Heavy Mod Frames',     check: s => (s.totalProduced.heavy_modular_frame||0) >= 10, reward: 'efficiency', rewardVal: 0.03 },
+  { id: 'm9',  name: 'Megawatt Club',         desc: 'Generate 500+ MW',                check: s => s.powerSupply >= 500, reward: 'efficiency', rewardVal: 0.02 },
+  { id: 'm10', name: 'Gigawatt Club',         desc: 'Generate 5000+ MW',               check: s => s.powerSupply >= 5000, reward: 'efficiency', rewardVal: 0.05 },
+  { id: 'm11', name: 'Millionaire',           desc: 'Reach 1,000,000 net worth',       check: s => s.netWorth >= 1000000, reward: 'efficiency', rewardVal: 0.03 },
+  { id: 'm12', name: 'Billionaire',           desc: 'Reach 1,000,000,000 net worth',   check: s => s.netWorth >= 1000000000, reward: 'efficiency', rewardVal: 0.05 },
+  { id: 'm13', name: 'Nuclear Age',           desc: 'Build a Nuclear Power Plant',     check: s => s.hasBuilt?.nuclear_plant, reward: 'efficiency', rewardVal: 0.04 },
+  { id: 'm14', name: 'Particle Physics',      desc: 'Produce 1 Nuclear Pasta',         check: s => (s.totalProduced.nuclear_pasta||0) >= 1, reward: 'efficiency', rewardVal: 0.05 },
+  { id: 'm15', name: 'Quantum Leap',          desc: 'Produce 1 Quantum Oscillator',    check: s => (s.totalProduced.quantum_oscillator||0) >= 1, reward: 'efficiency', rewardVal: 0.05 },
+  { id: 'm16', name: 'Singularity',           desc: 'Produce 1 Singularity Cell',      check: s => (s.totalProduced.singularity_cell||0) >= 1, reward: 'efficiency', rewardVal: 0.10 },
+  { id: 'm17', name: 'Floor Manager',         desc: 'Use all 8 factory floors',        check: s => s.activeFloors >= 8, reward: 'efficiency', rewardVal: 0.03 },
+  { id: 'm18', name: 'Diverse Empire',        desc: 'Produce 30+ different resources', check: s => Object.keys(s.totalProduced).filter(k => s.totalProduced[k] > 0).length >= 30, reward: 'efficiency', rewardVal: 0.05 },
+  { id: 'm19', name: 'Speed Demon',           desc: 'Reach 10,000 items/min total',    check: s => s.totalThroughput >= 10000, reward: 'efficiency', rewardVal: 0.05 },
+  { id: 'm20', name: 'The Architect',         desc: 'Complete all research',           check: s => s.allResearchDone, reward: 'efficiency', rewardVal: 0.10 },
+];
+
+
+// ═══════════════════════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════════════════════
+
+let gameState = null;
+
+function newGameState() {
+  return {
+    tick: 0,
+    startTime: Date.now(),
+    storage: {},           // resource_id -> quantity
+    totalProduced: {},     // resource_id -> total ever produced
+    floors: [
+      { name: 'Floor 1', slots: createSlots(8), unlocked: true },
+      { name: 'Floor 2', slots: createSlots(8), unlocked: true },
+      { name: 'Floor 3', slots: createSlots(10), unlocked: false },
+      { name: 'Floor 4', slots: createSlots(10), unlocked: false },
+      { name: 'Floor 5', slots: createSlots(12), unlocked: false },
+      { name: 'Floor 6', slots: createSlots(12), unlocked: false },
+      { name: 'Floor 7', slots: createSlots(14), unlocked: false },
+      { name: 'Floor 8', slots: createSlots(14), unlocked: false },
+    ],
+    research: {},          // research_id -> { started: bool, completed: bool, progress: 0-100 }
+    unlockedRecipes: new Set([
+      'mine_iron','mine_copper','mine_limestone','mine_coal','mine_quartz','mine_sulfur','mine_bauxite',
+      'smelt_iron','smelt_copper','make_concrete',
+      'make_iron_plate','make_iron_rod','make_copper_wire','make_screw','make_cable',
+    ]),
+    unlockedMachines: new Set([
+      'miner_mk1','smelter','constructor',
+    ]),
+    completedMilestones: new Set(),
+    milestoneBonus: 0,     // extra efficiency from milestones
+    activeResearch: null,  // research_id currently being researched
+    researchProgress: 0,   // 0-100
+    alerts: [],
+    hasBuilt: {},
+    // Manual power system
+    manualPower: 0,        // current MW from clicking
+    manualPowerMax: 200,   // cap for manual power
+    challengePower: 0,     // bonus MW from challenges
+    challengePowerTimer: 0,// seconds remaining for challenge bonus
+    lastChallengeTime: 0,  // tick when last challenge was offered
+    challengesSolved: 0,   // total challenges completed
+  };
+}
+
+function createSlots(count) {
+  const slots = [];
+  for (let i = 0; i < count; i++) {
+    slots.push({ machine: null, recipe: null, active: true, clockSpeed: 1.0 });
+  }
+  return slots;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GAME ENGINE
+// ═══════════════════════════════════════════════════════════════
+
+function getAllRecipes() {
+  return { ...RECIPES, ...ALT_RECIPES };
+}
+
+function getAvailableRecipesForMachine(machineId) {
+  const allRecipes = getAllRecipes();
+  const results = [];
+  for (const [id, recipe] of Object.entries(allRecipes)) {
+    if (recipe.machine === machineId && gameState.unlockedRecipes.has(id)) {
+      results.push({ id, ...recipe });
+    }
+  }
+  return results;
+}
+
+function getMaxClockSpeed() {
+  if (!gameState) return 1.0;
+  const r = gameState.research;
+  if (r.overclock_3?.completed) return 2.0;
+  if (r.overclock_2?.completed) return 1.5;
+  if (r.overclock_1?.completed) return 1.25;
+  return 1.0;
+}
+
+function computePower() {
+  let generatorSupply = 0;
+  let demand = 0;
+
+  for (const floor of gameState.floors) {
+    if (!floor.unlocked) continue;
+    for (const slot of floor.slots) {
+      if (!slot.machine || !slot.active) continue;
+      const machine = MACHINES[slot.machine];
+      if (machine.power < 0) {
+        // Generator — only count if it has a recipe with fuel
+        if (slot.recipe) {
+          generatorSupply += Math.abs(machine.power) * slot.clockSpeed;
+        }
+      } else {
+        // Overclocking uses quadratic power scaling (e.g. 1.5x speed = 2.25x power)
+        const powerMult = slot.clockSpeed > 1 ? slot.clockSpeed * slot.clockSpeed : slot.clockSpeed;
+        demand += machine.power * powerMult;
+      }
+    }
+  }
+
+  // Manual/challenge power only covers the deficit — generators are used first
+  const manualAvailable = (gameState.manualPower || 0) + (gameState.challengePower || 0);
+  const deficit = Math.max(0, demand - generatorSupply);
+  const manualUsed = Math.min(manualAvailable, deficit);
+  const supply = generatorSupply + manualUsed;
+
+  return { supply, demand, generatorSupply, manualUsed };
+}
+
+function computeEfficiency() {
+  const { supply, demand } = computePower();
+  let powerEff = demand > 0 ? Math.min(1, supply / demand) : 1;
+  let milestoneBonus = gameState.milestoneBonus;
+  return Math.min(2, powerEff * (1 + milestoneBonus)); // cap at 200%
+}
+
+function gameTick() {
+  gameState.tick++;
+
+  // Auto-save periodically
+  if (gameState.tick % AUTO_SAVE_INTERVAL === 0) autoSave();
+
+  const efficiency = computeEfficiency();
+  const allRecipes = getAllRecipes();
+  gameState.alerts = [];
+
+  // Only drain manual power when it's actually needed (covering a deficit)
+  const { manualUsed } = computePower();
+  if (gameState.manualPower > 0) {
+    // Drain proportional to usage: if no deficit, no drain; if fully used, drain at 2 MW/s
+    const drainRate = manualUsed > 0 ? 2 : 0;
+    gameState.manualPower = Math.max(0, gameState.manualPower - drainRate);
+  }
+
+  // Decay challenge power timer
+  if (gameState.challengePowerTimer > 0) {
+    gameState.challengePowerTimer--;
+    if (gameState.challengePowerTimer <= 0) {
+      gameState.challengePower = 0;
+      gameState.challengePowerTimer = 0;
+    }
+  }
+
+  // Maybe offer a challenge (every 45-75 seconds, if none active)
+  if (!activeChallengeData && gameState.tick - gameState.lastChallengeTime >= 45 + Math.floor(Math.random() * 30)) {
+    if (gameState.tick > 10) { // don't offer instantly
+      offerChallenge();
+    }
+  }
+
+  // Process each machine slot
+  for (const floor of gameState.floors) {
+    if (!floor.unlocked) continue;
+    for (const slot of floor.slots) {
+      if (!slot.machine || !slot.recipe || !slot.active) continue;
+
+      const recipe = allRecipes[slot.recipe];
+      if (!recipe) continue;
+
+      const effectiveRate = efficiency * slot.clockSpeed;
+
+      // Check if inputs available (need enough for 1 second of production)
+      let canProduce = true;
+      for (const [res, amount] of Object.entries(recipe.inputs)) {
+        const needed = (amount / recipe.time) * effectiveRate;
+        if ((gameState.storage[res] || 0) < needed) {
+          canProduce = false;
+          gameState.alerts.push({ type: 'warn', msg: `${MACHINES[slot.machine].name} starved: need ${RESOURCES[res].name}` });
+          break;
+        }
+      }
+
+      if (canProduce) {
+        // Consume inputs
+        for (const [res, amount] of Object.entries(recipe.inputs)) {
+          const consume = (amount / recipe.time) * effectiveRate;
+          gameState.storage[res] = Math.max(0, (gameState.storage[res] || 0) - consume);
+        }
+        // Produce outputs
+        for (const [res, amount] of Object.entries(recipe.outputs)) {
+          const produce = (amount / recipe.time) * effectiveRate;
+          gameState.storage[res] = (gameState.storage[res] || 0) + produce;
+          gameState.totalProduced[res] = (gameState.totalProduced[res] || 0) + produce;
+        }
+      }
+    }
+  }
+
+  // Clamp all storage to 0 minimum
+  for (const key of Object.keys(gameState.storage)) {
+    if (gameState.storage[key] < 0) gameState.storage[key] = 0;
+  }
+
+  // Process research
+  if (gameState.activeResearch) {
+    const research = RESEARCH[gameState.activeResearch];
+    if (research) {
+      // Check if we have the resources (deducted at start)
+      gameState.researchProgress += (100 / research.time);
+      if (gameState.researchProgress >= 100) {
+        completeResearch(gameState.activeResearch);
+      }
+    }
+  }
+
+  // Check milestones
+  checkMilestones();
+
+  // Update UI
+  updateUI();
+}
+
+function startResearch(researchId) {
+  const research = RESEARCH[researchId];
+  if (!research) return;
+
+  // Check prereqs
+  for (const prereq of research.prereqs) {
+    if (!gameState.research[prereq]?.completed) {
+      toast('Prerequisites not met!', 'error');
+      return;
+    }
+  }
+
+  // Check cost
+  for (const [res, amount] of Object.entries(research.cost)) {
+    if ((gameState.storage[res] || 0) < amount) {
+      toast(`Not enough ${RESOURCES[res].name}!`, 'error');
+      return;
+    }
+  }
+
+  // Deduct cost
+  for (const [res, amount] of Object.entries(research.cost)) {
+    gameState.storage[res] -= amount;
+  }
+
+  gameState.activeResearch = researchId;
+  gameState.researchProgress = 0;
+  gameState.research[researchId] = { started: true, completed: false };
+  toast(`Researching: ${research.name}`, 'success');
+  renderCurrentPage();
+}
+
+function completeResearch(researchId) {
+  const research = RESEARCH[researchId];
+  gameState.research[researchId] = { started: true, completed: true };
+  gameState.activeResearch = null;
+  gameState.researchProgress = 0;
+
+  // Unlock new recipes and machines
+  if (research.unlocks) {
+    for (const unlock of research.unlocks) {
+      if (MACHINES[unlock]) {
+        gameState.unlockedMachines.add(unlock);
+      }
+      if (RECIPES[unlock] || ALT_RECIPES[unlock]) {
+        gameState.unlockedRecipes.add(unlock);
+      }
+    }
+  }
+
+  // Unlock floors
+  const completedCount = Object.values(gameState.research).filter(r => r.completed).length;
+  if (completedCount >= 3 && !gameState.floors[2].unlocked) { gameState.floors[2].unlocked = true; toast('Floor 3 unlocked!', 'success'); }
+  if (completedCount >= 6 && !gameState.floors[3].unlocked) { gameState.floors[3].unlocked = true; toast('Floor 4 unlocked!', 'success'); }
+  if (completedCount >= 10 && !gameState.floors[4].unlocked) { gameState.floors[4].unlocked = true; toast('Floor 5 unlocked!', 'success'); }
+  if (completedCount >= 15 && !gameState.floors[5].unlocked) { gameState.floors[5].unlocked = true; toast('Floor 6 unlocked!', 'success'); }
+  if (completedCount >= 20 && !gameState.floors[6].unlocked) { gameState.floors[6].unlocked = true; toast('Floor 7 unlocked!', 'success'); }
+  if (completedCount >= 25 && !gameState.floors[7].unlocked) { gameState.floors[7].unlocked = true; toast('Floor 8 unlocked!', 'success'); }
+
+  toast(`Research complete: ${research.name}!`, 'success');
+  renderCurrentPage();
+}
+
+function checkMilestones() {
+  const stats = getStats();
+  for (const milestone of MILESTONES) {
+    if (gameState.completedMilestones.has(milestone.id)) continue;
+    try {
+      if (milestone.check(stats)) {
+        gameState.completedMilestones.add(milestone.id);
+        if (milestone.reward === 'efficiency') {
+          gameState.milestoneBonus += milestone.rewardVal;
+        }
+        toast(`🏆 Milestone: ${milestone.name}! (+${Math.round(milestone.rewardVal*100)}% efficiency)`, 'success');
+      }
+    } catch(e) {}
+  }
+}
+
+function getStats() {
+  const { supply, demand, generatorSupply } = computePower();
+  let totalMachines = 0;
+  let activeFloors = 0;
+  let totalThroughput = 0;
+  const allRecipes = getAllRecipes();
+  const efficiency = computeEfficiency();
+
+  for (const floor of gameState.floors) {
+    if (!floor.unlocked) continue;
+    let hasActive = false;
+    for (const slot of floor.slots) {
+      if (slot.machine && slot.recipe) {
+        totalMachines++;
+        hasActive = true;
+        const recipe = allRecipes[slot.recipe];
+        if (recipe) {
+          // Check actual resource availability
+          const powerEff = efficiency * slot.clockSpeed;
+          let resourceEff = 1;
+          for (const [res, amount] of Object.entries(recipe.inputs)) {
+            const needed = (amount / recipe.time) * powerEff;
+            if (needed > 0) {
+              resourceEff = Math.min(resourceEff, Math.min(1, (gameState.storage[res] || 0) / needed));
+            }
+          }
+          const actualEff = powerEff * resourceEff;
+          for (const [, amount] of Object.entries(recipe.outputs)) {
+            totalThroughput += (amount / recipe.time) * actualEff * 60;
+          }
+        }
+      }
+    }
+    if (hasActive) activeFloors++;
+  }
+
+  let netWorth = 0;
+  for (const [res, qty] of Object.entries(gameState.storage)) {
+    if (RESOURCES[res]) {
+      netWorth += Math.floor(qty) * RESOURCES[res].value;
+    }
+  }
+
+  const allResearchDone = Object.keys(RESEARCH).every(id => gameState.research[id]?.completed);
+
+  return {
+    powerSupply: supply,
+    powerDemand: demand,
+    generatorSupply,
+    efficiency,
+    totalMachines,
+    activeFloors,
+    netWorth,
+    totalThroughput,
+    totalProduced: gameState.totalProduced,
+    hasBuilt: gameState.hasBuilt,
+    allResearchDone,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UI SYSTEM
+// ═══════════════════════════════════════════════════════════════
+
+let currentPage = 'dashboard';
+let currentFloor = 0;
+let gameInterval = null;
+let floorShowMaxRates = false;
+let codexShowLocked = false;
+let codexSearch = '';
+
+function toggleFloorRates() {
+  floorShowMaxRates = !floorShowMaxRates;
+  renderFloors();
+}
+
+function startGame(resume) {
+  if (resume && typeof resume === 'object') {
+    // Resume from loaded save
+    gameState = resume;
+  } else {
+    gameState = newGameState();
+  }
+  document.getElementById('intro-screen').classList.add('fade-out');
+  setTimeout(() => {
+    document.getElementById('intro-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'grid';
+    renderCurrentPage();
+    gameInterval = setInterval(gameTick, 1000);
+  }, 800);
+}
+
+function switchPage(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.getElementById(`page-${page}`)?.classList.add('active');
+  renderCurrentPage();
+}
+
+function renderCurrentPage() {
+  switch(currentPage) {
+    case 'dashboard': renderDashboard(); break;
+    case 'floors': renderFloors(); break;
+    case 'research': renderResearch(); break;
+    case 'storage': renderStorage(); break;
+    case 'power': renderPower(); break;
+    case 'codex': renderCodex(); break;
+    case 'milestones': renderMilestones(); break;
+  }
+}
+
+function updateUI() {
+  // Update topbar stats
+  const stats = getStats();
+  const elapsed = Date.now() - gameState.startTime;
+  const h = String(Math.floor(elapsed / 3600000)).padStart(2,'0');
+  const m = String(Math.floor((elapsed % 3600000) / 60000)).padStart(2,'0');
+  const s = String(Math.floor((elapsed % 60000) / 1000)).padStart(2,'0');
+
+  document.getElementById('stat-session').textContent = `${h}:${m}:${s}`;
+  document.getElementById('stat-power').textContent = `${Math.round(stats.powerSupply)} / ${Math.round(stats.powerDemand)} MW`;
+  const autoEl = document.getElementById('stat-power-auto');
+  if (autoEl) {
+    const genMW = Math.round(stats.generatorSupply);
+    const demMW = Math.round(stats.powerDemand);
+    if (demMW > 0) {
+      const surplus = genMW - demMW;
+      autoEl.textContent = `gen: ${genMW} MW ${surplus >= 0 ? '(+' + surplus + ' surplus)' : '(' + surplus + ' deficit)'}`;
+      autoEl.style.color = surplus >= 0 ? 'var(--green-dim, #4a7)' : 'var(--red, #e55)';
+    } else {
+      autoEl.textContent = `gen: ${genMW} MW`;
+      autoEl.style.color = 'var(--text-dim)';
+    }
+  }
+  document.getElementById('stat-efficiency').textContent = `${Math.round(stats.efficiency * 100)}%`;
+  document.getElementById('stat-throughput').textContent = formatNum(Math.round(stats.totalThroughput));
+  document.getElementById('stat-networth').textContent = formatNum(Math.round(stats.netWorth));
+
+  // Power color
+  const powerEl = document.getElementById('stat-power');
+  powerEl.className = 'value';
+  if (stats.powerDemand === 0 || stats.powerSupply >= stats.powerDemand) {
+    powerEl.classList.add('power-ok');
+  } else if (stats.powerSupply >= stats.powerDemand * 0.5) {
+    powerEl.classList.add('power-warn');
+  } else {
+    powerEl.classList.add('power-crit');
+  }
+
+  // Status bar
+  const alertCount = gameState.alerts.length;
+  document.getElementById('status-alerts').textContent = `${alertCount} alert${alertCount !== 1 ? 's' : ''}`;
+  document.getElementById('status-tick').textContent = `Tick: ${gameState.tick}`;
+
+  const dot = document.getElementById('status-dot');
+  if (alertCount === 0) {
+    dot.className = 'status-dot green';
+  } else if (alertCount < 5) {
+    dot.className = 'status-dot amber';
+  } else {
+    dot.className = 'status-dot red';
+  }
+
+  // Manual power indicator
+  updateManualPowerUI();
+
+  // Update dashboard research progress in real time
+  const dashResearch = document.getElementById('dash-research');
+  if (dashResearch) {
+    if (gameState.activeResearch) {
+      dashResearch.style.display = '';
+      const r = RESEARCH[gameState.activeResearch];
+      const nameEl = document.getElementById('dash-research-name');
+      const barEl = document.getElementById('dash-research-bar');
+      const pctEl = document.getElementById('dash-research-pct');
+      if (nameEl) nameEl.textContent = r?.name || '';
+      if (barEl) barEl.style.width = gameState.researchProgress + '%';
+      if (pctEl) {
+        const remaining = Math.max(0, Math.round((100 - gameState.researchProgress) / (100 / r.time)));
+        pctEl.textContent = `${Math.round(gameState.researchProgress)}% — ~${remaining}s remaining`;
+      }
+    } else {
+      dashResearch.style.display = 'none';
+    }
+  }
+
+  // Update conveyor belt data
+  updateConveyorData(stats);
+
+  // Re-render active page periodically (every 2 ticks to avoid flicker)
+  if (gameState.tick % 2 === 0) {
+    renderCurrentPage();
+  }
+}
+
+// ─── LIVE CONVEYOR BELT (canvas-based) ──────────────────────
+
+const conveyor = {
+  items: [],          // { x, color }
+  lastSpawn: 0,       // timestamp of last spawn
+  throughput: 0,      // cached items/min
+  resourcePool: [],   // [color, color, ...] weighted by production rate
+  trackOffset: 0,     // px offset for dashed line animation
+  speed: 60,          // px/sec for items
+  lastFrame: 0,
+};
+
+function updateConveyorData(stats) {
+  conveyor.throughput = stats.totalThroughput || 0;
+  // Build weighted color pool from what's being produced
+  const pool = [];
+  const allRecipes = getAllRecipes();
+  const efficiency = computeEfficiency();
+  for (const floor of gameState.floors) {
+    if (!floor.unlocked) continue;
+    for (const slot of floor.slots) {
+      if (!slot.machine || !slot.recipe) continue;
+      const recipe = allRecipes[slot.recipe];
+      if (!recipe) continue;
+      const eff = efficiency * slot.clockSpeed;
+      for (const [res, amount] of Object.entries(recipe.outputs)) {
+        const prod = (amount / recipe.time) * eff * 60;
+        if (prod <= 0) continue;
+        const weight = Math.max(1, Math.round(prod / 5));
+        const color = RESOURCES[res]?.color || '#666';
+        for (let i = 0; i < weight && pool.length < 80; i++) pool.push(color);
+      }
+    }
+  }
+  conveyor.resourcePool = pool.length > 0 ? pool : ['#444'];
+  // Speed: nearly constant so density is controlled by spawn rate
+  conveyor.speed = 55 + Math.log2(1 + conveyor.throughput / 500) * 5;
+}
+
+function animateConveyor(now) {
+  requestAnimationFrame(animateConveyor);
+  const canvas = document.getElementById('conveyor-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  // Size canvas to actual CSS pixels
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.scale(dpr, dpr);
+  }
+  const W = rect.width;
+  const H = rect.height;
+  const dt = conveyor.lastFrame ? (now - conveyor.lastFrame) / 1000 : 0;
+  conveyor.lastFrame = now;
+  ctx.clearRect(0, 0, W, H);
+
+  // ── Draw dashed track ──
+  const midY = H / 2;
+  conveyor.trackOffset = (conveyor.trackOffset + dt * 40) % 16;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(180, 114, 8, 0.4)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 8]);
+  ctx.lineDashOffset = -conveyor.trackOffset;
+  ctx.beginPath();
+  ctx.moveTo(0, midY);
+  ctx.lineTo(W, midY);
+  ctx.stroke();
+  ctx.restore();
+
+  if (conveyor.throughput < 0.1) return; // idle — just the track
+
+  // ── Spawn items from left edge ──
+  // Items should only touch at ~100k items/min.
+  // Gap = speed / spawn_rate. At 100k, gap = item_size (14px) → touching.
+  // Scale interval with sqrt(100000/T) so density grows as sqrt of throughput.
+  const sz = 14; // item square size
+  const touchInterval = sz / conveyor.speed * 1000; // ms when items just touch
+  const interval = Math.max(touchInterval, touchInterval * Math.sqrt(100000 / Math.max(1, conveyor.throughput)));
+  // If we've been idle too long, reset spawn timer so items feed in gradually
+  if (now - conveyor.lastSpawn > interval * 2) {
+    conveyor.lastSpawn = now;
+  }
+  if (now - conveyor.lastSpawn >= interval) {
+    const color = conveyor.resourcePool[Math.floor(Math.random() * conveyor.resourcePool.length)];
+    conveyor.items.push({ x: -10, color });
+    conveyor.lastSpawn = now;
+  }
+
+  // ── Track glow scales with throughput ──
+  const glowIntensity = Math.min(0.6, conveyor.throughput / 5000);
+  if (glowIntensity > 0.05) {
+    ctx.save();
+    ctx.strokeStyle = `rgba(180, 114, 8, ${glowIntensity})`;
+    ctx.lineWidth = 6;
+    ctx.shadowColor = 'rgba(180, 114, 8, 0.5)';
+    ctx.shadowBlur = 8 + glowIntensity * 12;
+    ctx.beginPath();
+    ctx.moveTo(0, midY);
+    ctx.lineTo(W, midY);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ── Move & draw items ──
+  const r = 3;   // corner radius
+  for (let i = conveyor.items.length - 1; i >= 0; i--) {
+    const item = conveyor.items[i];
+    item.x += conveyor.speed * dt;
+    if (item.x > W + 20) { conveyor.items.splice(i, 1); continue; }
+
+    const ix = item.x - sz / 2;
+    const iy = midY - sz / 2;
+
+    // Rounded rect
+    ctx.beginPath();
+    ctx.moveTo(ix + r, iy);
+    ctx.lineTo(ix + sz - r, iy);
+    ctx.quadraticCurveTo(ix + sz, iy, ix + sz, iy + r);
+    ctx.lineTo(ix + sz, iy + sz - r);
+    ctx.quadraticCurveTo(ix + sz, iy + sz, ix + sz - r, iy + sz);
+    ctx.lineTo(ix + r, iy + sz);
+    ctx.quadraticCurveTo(ix, iy + sz, ix, iy + sz - r);
+    ctx.lineTo(ix, iy + r);
+    ctx.quadraticCurveTo(ix, iy, ix + r, iy);
+    ctx.closePath();
+    ctx.fillStyle = item.color;
+    ctx.globalAlpha = 0.85;
+    ctx.fill();
+    ctx.globalAlpha = 0.15;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// Start the animation loop once
+requestAnimationFrame(animateConveyor);
+
+
+
+// ─── RENDER: DASHBOARD ──────────────────────────────────────
+function renderDashboard() {
+  const stats = getStats();
+  const allRecipes = getAllRecipes();
+  const efficiency = stats.efficiency;
+
+  // Compute production/consumption rates
+  const rates = {};
+  for (const floor of gameState.floors) {
+    if (!floor.unlocked) continue;
+    for (const slot of floor.slots) {
+      if (!slot.machine || !slot.recipe || !slot.active) continue;
+      const recipe = allRecipes[slot.recipe];
+      if (!recipe) continue;
+      const eff = efficiency * slot.clockSpeed;
+      for (const [res, amount] of Object.entries(recipe.inputs)) {
+        if (!rates[res]) rates[res] = { prod: 0, cons: 0 };
+        rates[res].cons += (amount / recipe.time) * eff * 60;
+      }
+      for (const [res, amount] of Object.entries(recipe.outputs)) {
+        if (!rates[res]) rates[res] = { prod: 0, cons: 0 };
+        rates[res].prod += (amount / recipe.time) * eff * 60;
+      }
+    }
+  }
+
+  // Top resources by net rate
+  const sortedRates = Object.entries(rates)
+    .map(([id, r]) => ({ id, ...r, net: r.prod - r.cons, stored: gameState.storage[id] || 0 }))
+    .sort((a, b) => b.net - a.net);
+
+  // Alerts
+  const uniqueAlerts = [...new Set(gameState.alerts.map(a => a.msg))].slice(0, 8);
+
+  const page = document.getElementById('page-dashboard');
+  page.innerHTML = `
+    <div class="page-title">DASHBOARD</div>
+    <div class="page-subtitle">REAL-TIME PRODUCTION OVERVIEW</div>
+
+    <div class="grid-3" style="margin-bottom: 16px;">
+      <div class="card glow-amber">
+        <div class="card-title" style="color:var(--amber);font-size:11px;margin-bottom:8px;">NET WORTH</div>
+        <div style="font-family:var(--font-display);font-size:32px;color:var(--amber);font-weight:900;">
+          ${formatNum(Math.round(stats.netWorth))}
+        </div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:4px;">
+          Total value of stored resources
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="font-size:11px;margin-bottom:8px;">POWER GRID</div>
+        <div style="font-family:var(--font-display);font-size:24px;color:${stats.powerSupply >= stats.powerDemand ? 'var(--green)' : 'var(--red)'};font-weight:700;">
+          ${Math.round(stats.powerSupply)} / ${Math.round(stats.powerDemand)} MW
+        </div>
+        <div class="progress-bar" style="margin-top:8px;">
+          <div class="progress-fill ${stats.powerDemand > 0 && stats.powerSupply < stats.powerDemand ? 'red' : 'green'}"
+               style="width:${stats.powerDemand > 0 ? Math.min(100, (stats.powerSupply / stats.powerDemand) * 100) : 100}%"></div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:4px;">
+          Efficiency: ${Math.round(stats.efficiency * 100)}% | Bonus: +${Math.round(gameState.milestoneBonus * 100)}%
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="font-size:11px;margin-bottom:8px;">THROUGHPUT</div>
+        <div style="font-family:var(--font-display);font-size:24px;color:var(--cyan);font-weight:700;">
+          ${formatNum(Math.round(stats.totalThroughput))} <span style="font-size:12px;color:var(--text-dim);">items/min</span>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:4px;">
+          ${stats.totalMachines} machines | ${stats.activeFloors} active floors
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Production Rates</div>
+          <span class="text-dim" style="font-size:10px;font-family:var(--font-mono);">items/min</span>
+        </div>
+        ${sortedRates.length === 0 ? '<div class="text-dim" style="font-family:var(--font-mono);font-size:12px;">No production yet. Build some machines!</div>' : `
+        <table class="data-table">
+          <tr><th>Resource</th><th>Stored</th><th>+Prod</th><th>-Cons</th><th>Net</th></tr>
+          ${sortedRates.slice(0, 15).map(r => `
+            <tr>
+              <td>
+                <span class="res-icon" style="background:${RESOURCES[r.id]?.color || '#666'}"></span>
+                ${RESOURCES[r.id]?.name || r.id}
+              </td>
+              <td>${formatNum(Math.floor(r.stored))}</td>
+              <td class="text-green">+${r.prod.toFixed(1)}</td>
+              <td class="text-red">-${r.cons.toFixed(1)}</td>
+              <td class="${r.net >= 0 ? 'text-green' : 'text-red'}">${r.net >= 0 ? '+' : ''}${r.net.toFixed(1)}</td>
+            </tr>
+          `).join('')}
+        </table>`}
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Alerts</div>
+          <span class="text-dim" style="font-size:10px;font-family:var(--font-mono);">${uniqueAlerts.length} active</span>
+        </div>
+        <div class="alert-list">
+          ${uniqueAlerts.length === 0 ? '<div class="alert-item good">✓ All systems nominal</div>' :
+            uniqueAlerts.map(a => `<div class="alert-item">⚠ ${escapeHtml(a)}</div>`).join('')}
+        </div>
+        <div id="dash-research" style="margin-top:16px;${gameState.activeResearch ? '' : 'display:none;'}">
+            <div class="card-title" style="margin-bottom:8px;">Active Research</div>
+            <div id="dash-research-name" style="font-family:var(--font-mono);font-size:12px;color:var(--amber);margin-bottom:6px;">
+              ${RESEARCH[gameState.activeResearch]?.name || ''}
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill blue" id="dash-research-bar" style="width:${gameState.researchProgress}%"></div>
+            </div>
+            <div class="text-dim" id="dash-research-pct" style="font-size:10px;margin-top:4px;font-family:var(--font-mono);">${Math.round(gameState.researchProgress)}%</div>
+          </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="card-header">
+        <div class="card-title">Export Score</div>
+        <button class="btn btn-sm" onclick="copyScore()">📋 Copy to Clipboard</button>
+      </div>
+      <div class="score-export" id="score-output">${generateScoreText()}</div>
+    </div>
+  `;
+
+
+}
+
+function generateScoreText() {
+  const stats = getStats();
+  const elapsed = Date.now() - gameState.startTime;
+  const h = Math.floor(elapsed / 3600000);
+  const m = Math.floor((elapsed % 3600000) / 60000);
+  const completedResearch = Object.entries(gameState.research).filter(([,r]) => r.completed).length;
+  const totalResearch = Object.keys(RESEARCH).length;
+  const milestones = gameState.completedMilestones.size;
+
+  let text = `═══ OK FACTORY SCORE ═══\n`;
+  text += `NET WORTH: ${formatNum(Math.round(stats.netWorth))}\n`;
+  text += `Session: ${h}h ${m}m\n`;
+  text += `Machines: ${stats.totalMachines} | Floors: ${stats.activeFloors}\n`;
+  text += `Research: ${completedResearch}/${totalResearch}\n`;
+  text += `Milestones: ${milestones}/${MILESTONES.length}\n`;
+  text += `Throughput: ${formatNum(Math.round(stats.totalThroughput))} items/min\n`;
+  text += `Power: ${Math.round(stats.powerSupply)}/${Math.round(stats.powerDemand)} MW\n`;
+  text += `Efficiency: ${Math.round(stats.efficiency * 100)}%\n`;
+  text += `═══════════════════════\n`;
+
+  // Top 5 most valuable stored resources
+  const topRes = Object.entries(gameState.storage)
+    .filter(([id, qty]) => qty > 0 && RESOURCES[id])
+    .map(([id, qty]) => ({ id, qty: Math.floor(qty), value: Math.floor(qty) * RESOURCES[id].value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
+
+  if (topRes.length > 0) {
+    text += `TOP ASSETS:\n`;
+    topRes.forEach(r => {
+      text += `  ${RESOURCES[r.id].name}: ${formatNum(r.qty)} (₩${formatNum(r.value)})\n`;
+    });
+  }
+
+  return text;
+}
+
+function copyScore() {
+  const text = generateScoreText();
+  navigator.clipboard.writeText(text).then(() => toast('Score copied!', 'success'));
+}
+
+// ─── RENDER: FACTORY FLOORS ─────────────────────────────────
+function renderFloors() {
+  const page = document.getElementById('page-floors');
+  const floors = gameState.floors;
+
+  const tabsHtml = floors.map((f, i) => {
+    if (!f.unlocked) return `<button class="tab-btn" disabled style="opacity:0.3">🔒 ${f.name}</button>`;
+    return `<button class="tab-btn ${i === currentFloor ? 'active' : ''}" onclick="switchFloor(${i})">${f.name}</button>`;
+  }).join('');
+
+  const floor = floors[currentFloor];
+  if (!floor || !floor.unlocked) {
+    currentFloor = floors.findIndex(f => f.unlocked);
+    if (currentFloor < 0) currentFloor = 0;
+    return renderFloors();
+  }
+
+  const allRecipes = getAllRecipes();
+  const efficiency = computeEfficiency();
+  const showMax = typeof floorShowMaxRates !== 'undefined' && floorShowMaxRates;
+
+  const slotsHtml = floor.slots.map((slot, i) => {
+    if (!slot.machine) {
+      return `
+        <div class="machine-slot" onclick="openSlotModal(${currentFloor}, ${i})">
+          <div class="empty-label">+</div>
+          <div class="empty-text">Add Machine</div>
+        </div>
+      `;
+    }
+
+    const machine = MACHINES[slot.machine];
+    const recipe = slot.recipe ? allRecipes[slot.recipe] : null;
+    const powerEff = efficiency * slot.clockSpeed;
+
+    // Check actual resource availability for this machine
+    let resourceEff = 1;
+    let starved = false;
+    if (recipe && Object.keys(recipe.inputs).length > 0) {
+      for (const [res, amount] of Object.entries(recipe.inputs)) {
+        const needed = (amount / recipe.time) * powerEff;
+        const available = gameState.storage[res] || 0;
+        if (needed > 0) {
+          const ratio = Math.min(1, available / needed);
+          resourceEff = Math.min(resourceEff, ratio);
+        }
+      }
+      if (resourceEff < 0.01) starved = true;
+    }
+
+    const eff = powerEff * resourceEff;
+    const displayEff = showMax ? slot.clockSpeed : eff;
+
+    let ioHtml = '';
+    let effClass = 'eff-100';
+    let statusTag = '';
+    if (starved) {
+      statusTag = ' <span style="color:var(--red);font-size:9px;">⚠ STARVED</span>';
+    } else if (resourceEff < 1) {
+      statusTag = ' <span style="color:var(--orange);font-size:9px;">⚠ LOW INPUT</span>';
+    }
+    if (recipe) {
+      const inputs = Object.entries(recipe.inputs).map(([r, a]) =>
+        `${RESOURCES[r]?.name || r}: ${((a/recipe.time)*displayEff*60).toFixed(1)}/min`
+      ).join(', ');
+      const outputs = Object.entries(recipe.outputs).map(([r, a]) =>
+        `${RESOURCES[r]?.name || r}: ${((a/recipe.time)*displayEff*60).toFixed(1)}/min`
+      ).join(', ');
+
+      if (inputs) ioHtml += `<div class="slot-io">IN: ${escapeHtml(inputs)}</div>`;
+      if (outputs) ioHtml += `<div class="slot-io" style="color:var(--green)">OUT: ${escapeHtml(outputs)}</div>`;
+    }
+
+    if (eff < 0.5) effClass = 'eff-0';
+    else if (eff < 0.75) effClass = 'eff-50';
+    else if (eff < 1) effClass = 'eff-75';
+
+    return `
+      <div class="machine-slot filled">
+        <div class="slot-header">
+          <span class="slot-name">${escapeHtml(machine.name)}</span>
+          <div style="display:flex;gap:4px;">
+            <button class="btn btn-sm" onclick="openSlotModal(${currentFloor}, ${i})" title="Configure">⚙</button>
+            <button class="btn btn-sm btn-danger" onclick="removeSlot(${currentFloor}, ${i})" title="Remove">✕</button>
+          </div>
+        </div>
+        ${recipe ? `<div class="slot-recipe">${escapeHtml(recipe.name)}${statusTag}</div>` : '<div class="slot-recipe text-dim">No recipe set</div>'}
+        ${ioHtml}
+        <div class="slot-efficiency">
+          <div class="progress-bar" style="height:4px;">
+            <div class="progress-fill ${eff >= 1 ? 'green' : eff >= 0.5 ? '' : 'red'}" style="width:${Math.min(100, eff * 100)}%"></div>
+          </div>
+          <div style="font-size:10px;font-family:var(--font-mono);margin-top:2px;" class="${effClass}">
+            ${Math.round(eff * 100)}% eff | ${machine.power < 0 ? `+${Math.abs(machine.power * slot.clockSpeed)} MW` : `${Math.round(machine.power * (slot.clockSpeed > 1 ? slot.clockSpeed * slot.clockSpeed : slot.clockSpeed))} MW`} | x${slot.clockSpeed}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  page.innerHTML = `
+    <div class="page-title">FACTORY FLOORS</div>
+    <div class="page-subtitle">CONFIGURE PRODUCTION LINES</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div class="tab-bar" style="margin-bottom:0;">${tabsHtml}</div>
+      <button class="btn btn-sm" onclick="toggleFloorRates()" style="white-space:nowrap;font-size:10px;padding:4px 10px;border-color:${showMax ? 'var(--cyan)' : 'var(--border)'};">
+        ${showMax ? '📐 100% Rates' : '📊 Current Rates'}
+      </button>
+    </div>
+    <div class="grid-4">${slotsHtml}</div>
+  `;
+}
+
+function switchFloor(idx) {
+  currentFloor = idx;
+  renderFloors();
+}
+
+function openSlotModal(floorIdx, slotIdx) {
+  const floor = gameState.floors[floorIdx];
+  const slot = floor.slots[slotIdx];
+
+  const machineOptions = [...gameState.unlockedMachines].map(id => {
+    const m = MACHINES[id];
+    return `<option value="${id}" ${slot.machine === id ? 'selected' : ''}>${m.name} (${m.power < 0 ? '+' + Math.abs(m.power) : m.power} MW)</option>`;
+  }).join('');
+
+  const currentMachine = slot.machine;
+  let recipeOptions = '<option value="">-- Select Recipe --</option>';
+  if (currentMachine) {
+    const recipes = getAvailableRecipesForMachine(currentMachine);
+    recipeOptions += recipes.map(r =>
+      `<option value="${r.id}" ${slot.recipe === r.id ? 'selected' : ''}>${r.name}</option>`
+    ).join('');
+  }
+
+  const maxClock = getMaxClockSpeed();
+  const clockOptions = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    .filter(v => v <= maxClock)
+    .map(v =>
+      `<option value="${v}" ${slot.clockSpeed === v ? 'selected' : ''}>x${v} (${v > 1 ? Math.round(v*v*100)+'% power' : Math.round(v*100)+'% speed'})</option>`
+    ).join('');
+
+  showModal(`
+    <div class="modal-title">CONFIGURE SLOT #${slotIdx + 1}</div>
+
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);display:block;margin-bottom:4px;">MACHINE</label>
+      <select id="modal-machine" style="width:100%;" onchange="onMachineChange()">
+        <option value="">-- Select Machine --</option>
+        ${machineOptions}
+      </select>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);display:block;margin-bottom:4px;">RECIPE</label>
+      <select id="modal-recipe" style="width:100%;">
+        ${recipeOptions}
+      </select>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);display:block;margin-bottom:4px;">CLOCK SPEED</label>
+      <select id="modal-clock" style="width:100%;">
+        ${clockOptions}
+      </select>
+    </div>
+
+    <div id="modal-recipe-detail" style="margin-bottom:16px;"></div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSlot(${floorIdx}, ${slotIdx})">Save</button>
+    </div>
+  `);
+
+  // Show initial recipe detail
+  updateRecipeDetail();
+}
+
+function onMachineChange() {
+  const machineId = document.getElementById('modal-machine').value;
+  const recipeSelect = document.getElementById('modal-recipe');
+  recipeSelect.innerHTML = '<option value="">-- Select Recipe --</option>';
+  if (machineId) {
+    const recipes = getAvailableRecipesForMachine(machineId);
+    recipes.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = r.name;
+      recipeSelect.appendChild(opt);
+    });
+  }
+  updateRecipeDetail();
+}
+
+function updateRecipeDetail() {
+  const recipeId = document.getElementById('modal-recipe')?.value;
+  const clockSpeed = parseFloat(document.getElementById('modal-clock')?.value) || 1.0;
+  const detailEl = document.getElementById('modal-recipe-detail');
+  if (!detailEl) return;
+
+  if (!recipeId) {
+    detailEl.innerHTML = '';
+    return;
+  }
+
+  const allRecipes = getAllRecipes();
+  const recipe = allRecipes[recipeId];
+  if (!recipe) return;
+
+  const machine = MACHINES[recipe.machine];
+  const basePower = machine?.power || 0;
+  const powerMult = clockSpeed > 1 ? clockSpeed * clockSpeed : clockSpeed;
+  const adjPower = basePower < 0 ? Math.round(Math.abs(basePower) * clockSpeed) : Math.round(basePower * powerMult);
+
+  const inputs = Object.entries(recipe.inputs).map(([r, a]) => {
+    const rate = ((a / recipe.time) * clockSpeed * 60).toFixed(1);
+    return `<span class="res-icon" style="background:${RESOURCES[r]?.color || '#666'}"></span>${RESOURCES[r]?.name}: ${rate}/min`;
+  }).join('<br>');
+
+  const outputs = Object.entries(recipe.outputs).map(([r, a]) => {
+    const rate = ((a / recipe.time) * clockSpeed * 60).toFixed(1);
+    return `<span class="res-icon" style="background:${RESOURCES[r]?.color || '#666'}"></span>${RESOURCES[r]?.name}: ${rate}/min`;
+  }).join('<br>');
+
+  const clockLabel = clockSpeed !== 1 ? ` <span style="color:var(--cyan);">@ x${clockSpeed}</span>` : '';
+
+  detailEl.innerHTML = `
+    <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:4px;padding:10px;font-family:var(--font-mono);font-size:11px;">
+      <div style="color:var(--text-dim);margin-bottom:4px;">RECIPE DETAIL${clockLabel}</div>
+      ${inputs ? `<div style="margin-bottom:6px;"><span class="text-red">Inputs:</span><br>${inputs}</div>` : '<div class="text-dim">No inputs (extraction)</div>'}
+      ${outputs ? `<div><span class="text-green">Outputs:</span><br>${outputs}</div>` : ''}
+      <div style="margin-top:6px;color:var(--text-dim);">Cycle: ${recipe.time}s | Power: ${basePower < 0 ? '+' + adjPower : adjPower} MW</div>
+    </div>
+  `;
+}
+
+function saveSlot(floorIdx, slotIdx) {
+  const machineId = document.getElementById('modal-machine').value;
+  const recipeId = document.getElementById('modal-recipe').value;
+  const clockSpeed = parseFloat(document.getElementById('modal-clock').value) || 1.0;
+
+  const slot = gameState.floors[floorIdx].slots[slotIdx];
+  slot.machine = machineId || null;
+  slot.recipe = recipeId || null;
+  slot.clockSpeed = clockSpeed;
+
+  if (machineId) {
+    gameState.hasBuilt[machineId] = true;
+  }
+
+  closeModal();
+  renderFloors();
+  toast('Slot configured!', 'success');
+}
+
+function removeSlot(floorIdx, slotIdx) {
+  const slot = gameState.floors[floorIdx].slots[slotIdx];
+  slot.machine = null;
+  slot.recipe = null;
+  slot.clockSpeed = 1.0;
+  renderFloors();
+}
+
+// ─── RENDER: RESEARCH LAB ───────────────────────────────────
+function renderResearch() {
+  const page = document.getElementById('page-research');
+  const tiers = [1, 2, 3, 4, 5, 6];
+
+  let html = `
+    <div class="page-title">RESEARCH LAB</div>
+    <div class="page-subtitle">UNLOCK NEW TECHNOLOGIES</div>
+  `;
+
+  if (gameState.activeResearch) {
+    const r = RESEARCH[gameState.activeResearch];
+    html += `
+      <div class="card glow-amber" style="margin-bottom:16px;">
+        <div class="card-title" style="color:var(--amber);">ACTIVE RESEARCH: ${escapeHtml(r.name)}</div>
+        <div class="progress-bar" style="margin-top:8px;height:8px;">
+          <div class="progress-fill" style="width:${gameState.researchProgress}%"></div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:4px;">
+          ${Math.round(gameState.researchProgress)}% complete — ~${Math.max(0, Math.round((100 - gameState.researchProgress) / (100 / r.time)))}s remaining
+        </div>
+      </div>
+    `;
+  }
+
+  for (const tier of tiers) {
+    const tierResearch = Object.entries(RESEARCH).filter(([, r]) => r.tier === tier);
+    if (tierResearch.length === 0) continue;
+
+    html += `<div style="font-family:var(--font-display);font-size:14px;color:var(--text-dim);margin:16px 0 8px;letter-spacing:2px;">TIER ${tier}</div>`;
+    html += `<div class="grid-3">`;
+
+    for (const [id, research] of tierResearch) {
+      const completed = gameState.research[id]?.completed;
+      const inProgress = gameState.activeResearch === id;
+      const prereqsMet = research.prereqs.every(p => gameState.research[p]?.completed);
+      const locked = !prereqsMet && !completed;
+
+      let stateClass = locked ? 'locked' : (completed ? 'completed' : (inProgress ? 'in-progress' : ''));
+
+      const costHtml = Object.entries(research.cost).map(([res, amount]) => {
+        const have = Math.floor(gameState.storage[res] || 0);
+        if (inProgress) {
+          // Show resources draining: remaining = cost * (1 - progress/100)
+          const remaining = Math.ceil(amount * (1 - gameState.researchProgress / 100));
+          return `<span style="color:var(--amber);opacity:0.8">${RESOURCES[res]?.name}: <span style="font-variant-numeric:tabular-nums">${formatNum(remaining)}</span>/${formatNum(amount)}</span>`;
+        }
+        const enough = have >= amount || completed;
+        return `<span style="color:${enough ? 'var(--green)' : 'var(--red)'}">${RESOURCES[res]?.name}: ${formatNum(have)}/${formatNum(amount)}</span>`;
+      }).join(' · ');
+
+      let totalLine = '';
+      if (!completed && !inProgress) {
+        let totalHave = 0, totalNeed = 0;
+        for (const [res, amount] of Object.entries(research.cost)) {
+          totalHave += Math.min(Math.floor(gameState.storage[res] || 0), amount);
+          totalNeed += amount;
+        }
+        const allMet = totalHave >= totalNeed;
+        totalLine = `<div style="font-family:var(--font-mono);font-size:10px;margin-top:4px;color:${allMet ? 'var(--green)' : 'var(--text-dim)'};">${formatNum(totalHave)} / ${formatNum(totalNeed)} total</div>`;
+      }
+
+      const progressStyle = inProgress ? `--progress:${gameState.researchProgress}%` : '';
+
+      html += `
+        <div class="research-node ${stateClass}" style="${progressStyle}" onclick="${!locked && !completed && !inProgress && !gameState.activeResearch ? `startResearch('${id}')` : ''}">
+          <div class="rn-tier">Tier ${tier}${research.prereqs.length ? ' · Requires: ' + research.prereqs.map(p => RESEARCH[p]?.name || p).join(', ') : ''}</div>
+          <div class="rn-name">${escapeHtml(research.name)}</div>
+          <div class="rn-desc">${escapeHtml(research.desc)}</div>
+          <div class="rn-cost">${costHtml}</div>
+          ${totalLine}
+          ${inProgress ? `<div class="progress-bar" style="margin-top:6px;height:4px;"><div class="progress-fill" style="width:${gameState.researchProgress}%"></div></div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--amber);margin-top:3px;">${Math.round(gameState.researchProgress)}% — ~${Math.max(0, Math.round((100 - gameState.researchProgress) / (100 / research.time)))}s</div>` : completed ? '' : `<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dark);margin-top:4px;">Duration: ${research.time}s</div>`}
+        </div>
+      `;
+    }
+
+    html += `</div>`;
+  }
+
+  page.innerHTML = html;
+}
+
+// ─── RENDER: STORAGE VAULT ──────────────────────────────────
+function renderStorage() {
+  const page = document.getElementById('page-storage');
+  const allRecipes = getAllRecipes();
+  const efficiency = computeEfficiency();
+
+  // Compute rates
+  const rates = {};
+  for (const floor of gameState.floors) {
+    if (!floor.unlocked) continue;
+    for (const slot of floor.slots) {
+      if (!slot.machine || !slot.recipe || !slot.active) continue;
+      const recipe = allRecipes[slot.recipe];
+      if (!recipe) continue;
+      const eff = efficiency * slot.clockSpeed;
+      for (const [res, amount] of Object.entries(recipe.inputs)) {
+        if (!rates[res]) rates[res] = { prod: 0, cons: 0 };
+        rates[res].cons += (amount / recipe.time) * eff * 60;
+      }
+      for (const [res, amount] of Object.entries(recipe.outputs)) {
+        if (!rates[res]) rates[res] = { prod: 0, cons: 0 };
+        rates[res].prod += (amount / recipe.time) * eff * 60;
+      }
+    }
+  }
+
+  const categories = ['ore', 'fluid', 'ingot', 'material', 'part', 'component', 'complex', 'advanced', 'elite'];
+  const catNames = { ore: 'Raw Ores', fluid: 'Fluids', ingot: 'Ingots & Refined', material: 'Materials', part: 'Basic Parts', component: 'Components', complex: 'Complex Products', advanced: 'Advanced Products', elite: 'Elite Products' };
+
+  let html = `
+    <div class="page-title">STORAGE VAULT</div>
+    <div class="page-subtitle">RESOURCE INVENTORY & FLOW</div>
+  `;
+
+  for (const cat of categories) {
+    const resources = Object.entries(RESOURCES).filter(([, r]) => r.category === cat);
+    const hasAny = resources.some(([id]) => (gameState.storage[id] || 0) > 0 || rates[id]);
+    if (!hasAny) continue;
+
+    html += `
+      <div class="card">
+        <div class="card-title" style="margin-bottom:8px;">${catNames[cat] || cat}</div>
+        <table class="data-table">
+          <tr><th>Resource</th><th>Tier</th><th>Stored</th><th>Value/unit</th><th>Total Value</th><th>+Prod/min</th><th>-Cons/min</th><th>Net/min</th></tr>
+          ${resources.filter(([id]) => (gameState.storage[id] || 0) > 0.1 || rates[id]).map(([id, res]) => {
+            const stored = Math.floor(gameState.storage[id] || 0);
+            const r = rates[id] || { prod: 0, cons: 0 };
+            const net = r.prod - r.cons;
+            return `
+              <tr>
+                <td><span class="res-icon" style="background:${res.color}"></span>${res.name}</td>
+                <td class="text-dim">T${res.tier}</td>
+                <td class="text-bright">${formatNum(stored)}</td>
+                <td class="text-amber">${formatNum(res.value)}</td>
+                <td class="text-amber">${formatNum(stored * res.value)}</td>
+                <td class="text-green">${r.prod > 0 ? '+' + r.prod.toFixed(1) : '-'}</td>
+                <td class="text-red">${r.cons > 0 ? '-' + r.cons.toFixed(1) : '-'}</td>
+                <td class="${net >= 0 ? 'text-green' : 'text-red'}">${net !== 0 ? (net > 0 ? '+' : '') + net.toFixed(1) : '-'}</td>
+              </tr>
+            `;
+          }).join('')}
+        </table>
+      </div>
+    `;
+  }
+
+  page.innerHTML = html;
+}
+
+// ─── RENDER: POWER GRID ─────────────────────────────────────
+function renderPower() {
+  const page = document.getElementById('page-power');
+  const { supply, demand } = computePower();
+  const allRecipes = getAllRecipes();
+
+  // List all generators
+  const generators = [];
+  const consumers = [];
+
+  for (const floor of gameState.floors) {
+    if (!floor.unlocked) continue;
+    for (let i = 0; i < floor.slots.length; i++) {
+      const slot = floor.slots[i];
+      if (!slot.machine || !slot.active) continue;
+      const machine = MACHINES[slot.machine];
+      if (machine.power < 0) {
+        generators.push({ floor: floor.name, slot: i, machine, recipe: slot.recipe ? allRecipes[slot.recipe] : null, clockSpeed: slot.clockSpeed });
+      } else if (machine.power > 0) {
+        consumers.push({ floor: floor.name, slot: i, machine, recipe: slot.recipe ? allRecipes[slot.recipe] : null, clockSpeed: slot.clockSpeed });
+      }
+    }
+  }
+
+  const crankStats = getCrankStats();
+  const challengeScale = getChallengeScale();
+  const manualMW = Math.round(gameState.manualPower + gameState.challengePower);
+  const nextChallengeTicks = Math.max(0, (gameState.lastChallengeTime + 55) - gameState.tick);
+
+  page.innerHTML = `
+    <div class="page-title">POWER GRID</div>
+    <div class="page-subtitle">ENERGY SUPPLY & DEMAND MANAGEMENT</div>
+
+    <div class="card glow-amber" style="margin-bottom:16px;">
+      <div class="card-title" style="color:var(--amber);margin-bottom:12px;">⚡ MANUAL GENERATOR <span style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);">Mk.${crankStats.level}</span></div>
+      <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);margin-bottom:6px;">MANUAL POWER OUTPUT</div>
+          <div style="font-family:var(--font-display);font-size:32px;color:var(--amber);font-weight:700;">${manualMW} MW</div>
+          <div class="progress-bar" style="margin-top:8px;height:8px;">
+            <div class="progress-fill amber" style="width:${Math.min(100, (manualMW / crankStats.max) * 100)}%"></div>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:6px;">Crank: +${crankStats.perClick} MW/click (reserve — drains only when needed) · Max: ${crankStats.max} MW</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:4px;">Challenges solved: ${gameState.challengesSolved} · Tier ${challengeScale.tier} (x${challengeScale.powerMult.toFixed(1)} rewards) · Next: ~${nextChallengeTicks}s</div>
+        </div>
+        <div style="text-align:center;">
+          <button class="big-crank-btn" onclick="crankManualPower()">⚡<br>CRANK</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card glow-amber" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div class="card-title">Grid Status</div>
+          <div style="font-family:var(--font-display);font-size:28px;margin-top:8px;color:${supply >= demand ? 'var(--green)' : 'var(--red)'};font-weight:700;">
+            ${Math.round(supply)} MW <span style="color:var(--text-dim);font-size:16px;">supply</span>
+            / ${Math.round(demand)} MW <span style="color:var(--text-dim);font-size:16px;">demand</span>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:var(--font-display);font-size:36px;color:${supply >= demand ? 'var(--green)' : 'var(--red)'};font-weight:900;">
+            ${demand > 0 ? Math.round((supply / demand) * 100) : 100}%
+          </div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">GRID EFFICIENCY</div>
+        </div>
+      </div>
+      <div class="progress-bar" style="margin-top:12px;height:10px;">
+        <div class="progress-fill ${supply >= demand ? 'green' : 'red'}" style="width:${demand > 0 ? Math.min(100, (supply/demand)*100) : 100}%"></div>
+      </div>
+      ${supply < demand ? `<div style="color:var(--red);font-family:var(--font-mono);font-size:12px;margin-top:8px;">⚠ POWER DEFICIT: All machines running at ${Math.round((supply/demand)*100)}% speed. Build more generators!</div>` : ''}
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title" style="color:var(--green);margin-bottom:8px;">GENERATORS (${generators.length})</div>
+        ${generators.length === 0 ? '<div class="text-dim" style="font-family:var(--font-mono);font-size:12px;">No generators built — using emergency power</div>' : `
+        <table class="data-table">
+          <tr><th>Machine</th><th>Floor</th><th>Output</th><th>Fuel</th></tr>
+          ${generators.map(g => `
+            <tr>
+              <td class="text-green">${g.machine.name}</td>
+              <td class="text-dim">${g.floor} #${g.slot+1}</td>
+              <td class="text-green">+${Math.abs(g.machine.power * g.clockSpeed)} MW</td>
+              <td class="text-dim">${g.recipe ? g.recipe.name : 'No fuel set'}</td>
+            </tr>
+          `).join('')}
+        </table>`}
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--orange);margin-bottom:8px;">CONSUMERS (${consumers.length})</div>
+        ${consumers.length === 0 ? '<div class="text-dim" style="font-family:var(--font-mono);font-size:12px;">No machines consuming power</div>' : `
+        <table class="data-table">
+          <tr><th>Machine</th><th>Floor</th><th>Draw</th><th>Recipe</th></tr>
+          ${consumers.map(c => `
+            <tr>
+              <td>${c.machine.name}</td>
+              <td class="text-dim">${c.floor} #${c.slot+1}</td>
+              <td class="text-red">${Math.round(c.machine.power * (c.clockSpeed > 1 ? c.clockSpeed * c.clockSpeed : c.clockSpeed))} MW</td>
+              <td class="text-dim">${c.recipe ? c.recipe.name : 'Idle'}</td>
+            </tr>
+          `).join('')}
+        </table>`}
+      </div>
+    </div>
+  `;
+}
+
+// ─── RENDER: RECIPE CODEX ───────────────────────────────────
+function renderCodex() {
+  const page = document.getElementById('page-codex');
+  if (!page) return;
+  if (!gameState) {
+    page.innerHTML = '<div class="page-title">RECIPE CODEX</div><p style="color:var(--text-dim);">Waiting for game to start...</p>';
+    return;
+  }
+  try {
+  const allRecipes = { ...RECIPES, ...ALT_RECIPES };
+
+  // Group by machine category then machine
+  const categories = ['extraction', 'processing', 'production', 'power'];
+  const catNames = { extraction: 'Extraction', processing: 'Processing & Refining', production: 'Production & Assembly', power: 'Power Generation' };
+  const byMachine = Object.create(null);
+  for (const [id, recipe] of Object.entries(allRecipes)) {
+    if (!byMachine[recipe.machine]) byMachine[recipe.machine] = [];
+    const unlocked = gameState.unlockedRecipes.has(id);
+    byMachine[recipe.machine].push({ id, ...recipe, unlocked });
+  }
+
+  // Sort recipes within each machine by tier then name
+  for (const recipes of Object.values(byMachine)) {
+    recipes.sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name));
+  }
+
+  // Count totals
+  const totalRecipes = Object.keys(allRecipes).length;
+  const unlockedCount = Object.keys(allRecipes).filter(id => gameState.unlockedRecipes.has(id)).length;
+
+  let html = `
+    <div class="page-title">RECIPE CODEX</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:12px;flex-wrap:wrap;">
+      <div class="page-subtitle" style="margin:0;">ALL KNOWN PRODUCTION RECIPES — ${unlockedCount}/${totalRecipes} UNLOCKED</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <input type="text" id="codex-search" placeholder="Search recipes, resources..." value="${escapeHtml(codexSearch)}"
+          oninput="codexSearch=this.value;renderCodex();"
+          style="background:var(--bg-dark);border:1px solid var(--border);color:var(--text-bright);padding:4px 10px;border-radius:4px;font-size:11px;font-family:var(--font-mono);width:200px;outline:none;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim);cursor:pointer;user-select:none;white-space:nowrap;">
+          <input type="checkbox" id="codex-show-locked" ${codexShowLocked ? 'checked' : ''}
+            onchange="codexShowLocked=this.checked;renderCodex();"
+            style="accent-color:var(--amber);cursor:pointer;">
+          Show locked
+        </label>
+      </div>
+    </div>
+  `;
+
+  for (const cat of categories) {
+    const machinesToShow = Object.entries(MACHINES)
+      .filter(([, m]) => m.category === cat)
+      .sort((a, b) => a[1].tier - b[1].tier);
+    if (machinesToShow.length === 0) continue;
+
+    html += `<div style="font-family:var(--font-display);font-size:14px;color:var(--text-dim);margin:20px 0 10px;letter-spacing:2px;">${catNames[cat] || cat}</div>`;
+
+    for (const [machineId, machine] of machinesToShow) {
+      const recipes = byMachine[machineId];
+      if (!recipes || recipes.length === 0) continue;
+      const machineUnlocked = gameState.unlockedMachines.has(machineId);
+      const unlockedRecipesCount = recipes.filter(r => r.unlocked).length;
+      let visibleRecipes = codexShowLocked ? recipes : recipes.filter(r => r.unlocked);
+      if (!codexShowLocked && !machineUnlocked) continue;
+      if (codexSearch) {
+        const q = codexSearch.toLowerCase();
+        visibleRecipes = visibleRecipes.filter(r =>
+          r.name.toLowerCase().includes(q) ||
+          Object.keys(r.inputs).some(k => (RESOURCES[k]?.name || k).toLowerCase().includes(q)) ||
+          Object.keys(r.outputs).some(k => (RESOURCES[k]?.name || k).toLowerCase().includes(q)) ||
+          machine.name.toLowerCase().includes(q)
+        );
+      }
+      if (visibleRecipes.length === 0) continue;
+
+      html += `
+        <div class="card" style="margin-bottom:8px;${!machineUnlocked ? 'opacity:0.5;' : ''}">
+          <div class="card-header">
+            <div class="card-title">
+              ${escapeHtml(machine.name)}
+              ${!machineUnlocked ? ' 🔒' : ''}
+              <span class="text-dim" style="font-size:10px;margin-left:8px;">${unlockedRecipesCount}/${recipes.length} recipes</span>
+            </div>
+            <span class="text-dim" style="font-size:10px;font-family:var(--font-mono);">${machine.power < 0 ? 'Generates ' + Math.abs(machine.power) + ' MW' : machine.power + ' MW'} · ${escapeHtml(machine.desc)}</span>
+          </div>
+          <table class="data-table">
+            <tr><th>Recipe</th><th>Tier</th><th>Inputs (/min)</th><th>Outputs (/min)</th><th>Cycle</th><th>Status</th></tr>
+            ${visibleRecipes.map(r => {
+              const rateMultiplier = 60 / r.time;
+              return `
+              <tr style="${!r.unlocked ? 'opacity:0.35;' : ''}">
+                <td class="${r.unlocked ? 'text-bright' : 'text-dim'}">${escapeHtml(r.name)}</td>
+                <td class="text-dim">T${r.tier}</td>
+                <td>${Object.entries(r.inputs).length > 0 ? Object.entries(r.inputs).map(([res,a]) =>
+                  `<span class="res-icon" style="background:${RESOURCES[res]?.color || '#666'}"></span>${RESOURCES[res]?.name || res}: ${(a * rateMultiplier).toFixed(0)}`
+                ).join('<br>') : '<span class="text-dim">—</span>'}</td>
+                <td>${Object.entries(r.outputs).length > 0 ? Object.entries(r.outputs).map(([res,a]) =>
+                  `<span class="res-icon" style="background:${RESOURCES[res]?.color || '#666'}"></span>${RESOURCES[res]?.name || res}: ${(a * rateMultiplier).toFixed(0)}`
+                ).join('<br>') : (r.isPower ? `<span style="color:var(--amber);">⚡ ${r.powerGen} MW</span>` : '<span class="text-dim">—</span>')}</td>
+                <td class="text-dim">${r.time}s</td>
+                <td>${r.unlocked ? '<span class="text-green">✓ Unlocked</span>' : '<span class="text-dim">🔒 Locked</span>'}</td>
+              </tr>`;
+            }).join('')}
+          </table>
+        </div>
+      `;
+    }
+  }
+
+  page.innerHTML = html;
+  // Restore search focus and cursor position
+  const searchEl = document.getElementById('codex-search');
+  if (searchEl && codexSearch) {
+    searchEl.focus();
+    searchEl.selectionStart = searchEl.selectionEnd = searchEl.value.length;
+  }
+  } catch(e) {
+    page.innerHTML = '<div class="page-title">RECIPE CODEX</div><pre style="color:red;padding:20px;">Error rendering codex: ' + e.message + '\n' + e.stack + '</pre>';
+  }
+}
+
+// ─── RENDER: MILESTONES ─────────────────────────────────────
+function renderMilestones() {
+  const page = document.getElementById('page-milestones');
+  const stats = getStats();
+
+  let html = `
+    <div class="page-title">MILESTONES</div>
+    <div class="page-subtitle">ACHIEVEMENTS & BONUSES — ${gameState.completedMilestones.size}/${MILESTONES.length}</div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title" style="color:var(--amber);">TOTAL MILESTONE BONUS: +${Math.round(gameState.milestoneBonus * 100)}% EFFICIENCY</div>
+    </div>
+    <div class="grid-3">
+  `;
+
+  for (const m of MILESTONES) {
+    const done = gameState.completedMilestones.has(m.id);
+    html += `
+      <div class="card" style="${done ? 'border-color:var(--green-dim);' : ''}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font-family:var(--font-display);font-size:12px;color:${done ? 'var(--green)' : 'var(--text-bright)'};font-weight:700;margin-bottom:4px;">
+              ${done ? '🏆 ' : ''}${escapeHtml(m.name)}
+            </div>
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">${escapeHtml(m.desc)}</div>
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--amber);">
+              Reward: +${Math.round(m.rewardVal * 100)}% efficiency
+            </div>
+          </div>
+          ${done ? '<span style="color:var(--green);font-size:20px;">✓</span>' : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  html += '</div>';
+  page.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MANUAL POWER & CHALLENGE SYSTEM
+// ═══════════════════════════════════════════════════════════════
+
+let activeChallengeData = null;
+let challengeInterval = null;
+
+function crankManualPower() {
+  if (!gameState) return;
+  const stats = getCrankStats();
+  gameState.manualPower = Math.min(stats.max, gameState.manualPower + stats.perClick);
+  // Visual feedback
+  const btn = document.querySelector('.crank-btn');
+  if (btn) {
+    const flash = document.createElement('span');
+    flash.className = 'crank-flash';
+    btn.appendChild(flash);
+    setTimeout(() => flash.remove(), 400);
+  }
+  updateManualPowerUI();
+}
+
+function getCrankStats() {
+  if (!gameState) return { perClick: 3, max: 200, level: 1 };
+  const r = gameState.research;
+  if (r.crank_mk4?.completed) return { perClick: 50, max: 1500, level: 4 };
+  if (r.crank_mk3?.completed) return { perClick: 20, max: 800,  level: 3 };
+  if (r.crank_mk2?.completed) return { perClick: 8,  max: 400,  level: 2 };
+  return { perClick: 3, max: 200, level: 1 };
+}
+
+function getChallengeScale() {
+  // Scale challenge rewards and difficulty by how many you've solved
+  const solved = gameState ? gameState.challengesSolved : 0;
+  // Every 10 challenges solved, bump a tier (max tier 5)
+  const tier = Math.min(5, Math.floor(solved / 10));
+  return {
+    tier,
+    powerMult:    1 + tier * 0.4,   // 1x, 1.4x, 1.8x, 2.2x, 2.6x, 3x
+    durationMult: 1 + tier * 0.2,   // 1x, 1.2x, 1.4x, 1.6x, 1.8x, 2x
+    speedMult:    1 + tier * 0.15,  // calibration needle speed
+    seqExtra:     tier,             // +0, +1, +2, +3, +4, +5 sequence length
+    clickExtra:   tier * 5,         // +0, +5, +10, +15, +20, +25 overload clicks
+    timePenalty:  tier * 300,       // -0, -300, -600, -900, -1200, -1500 ms from timer
+  };
+}
+
+function updateManualPowerUI() {
+  if (!gameState) return;
+  const stats = getCrankStats();
+  const mwEl = document.getElementById('manual-mw');
+  const barEl = document.getElementById('manual-bar');
+  const manualTotal = gameState.manualPower + gameState.challengePower;
+  if (mwEl) mwEl.textContent = Math.round(manualTotal);
+  if (barEl) barEl.style.width = Math.min(100, (manualTotal / stats.max) * 100) + '%';
+
+  // Power deficit indicator: only show pre-automated power (no generators built)
+  const { supply, demand, generatorSupply } = computePower();
+  const hasGenerators = generatorSupply > 0;
+  const deficit = demand - generatorSupply;
+  const crankBtn = document.querySelector('.crank-btn');
+  const deficitEl = document.getElementById('power-deficit-label');
+
+  if (!hasGenerators && deficit > 0 && demand > 0) {
+    if (crankBtn) crankBtn.classList.add('deficit');
+    if (deficitEl) {
+      deficitEl.style.display = '';
+      if (manualTotal >= deficit) {
+        deficitEl.textContent = `▼ ${Math.round(deficit)} MW DEFICIT`;
+      } else {
+        deficitEl.textContent = `▼ ${Math.round(deficit)} MW DEFICIT!`;
+        deficitEl.style.color = 'var(--red)';
+      }
+    }
+  } else {
+    if (crankBtn) crankBtn.classList.remove('deficit');
+    if (deficitEl) deficitEl.style.display = 'none';
+  }
+}
+
+// ─── CHALLENGE SYSTEM ───────────────────────────────────────
+
+function offerChallenge() {
+  gameState.lastChallengeTime = gameState.tick;
+  const types = ['calibration', 'sequence', 'overload'];
+  const type = types[Math.floor(Math.random() * types.length)];
+  launchChallenge(type);
+}
+
+function launchChallenge(type) {
+  const container = document.getElementById('challenge-root');
+  if (!container) return;
+  activeChallengeData = { type, startTime: Date.now(), score: 0 };
+
+  switch (type) {
+    case 'calibration': startCalibrationChallenge(container); break;
+    case 'sequence': startSequenceChallenge(container); break;
+    case 'overload': startOverloadChallenge(container); break;
+  }
+}
+
+function endChallenge(rating, container) {
+  if (challengeInterval) { clearInterval(challengeInterval); challengeInterval = null; }
+
+  const scale = getChallengeScale();
+  let basePower = 0, baseDuration = 0, label = '', cls = '';
+  switch (rating) {
+    case 'perfect': basePower = 60; baseDuration = 45; label = 'PERFECT!'; cls = 'perfect'; break;
+    case 'good':    basePower = 35; baseDuration = 30; label = 'GOOD';     cls = 'good'; break;
+    case 'ok':      basePower = 15; baseDuration = 20; label = 'OK';       cls = 'ok'; break;
+    default:        basePower = 0;  baseDuration = 0;  label = 'FAILED';   cls = 'fail'; break;
+  }
+
+  const power = Math.round(basePower * scale.powerMult);
+  const duration = Math.round(baseDuration * scale.durationMult);
+
+  gameState.challengePower = power;
+  gameState.challengePowerTimer = duration;
+  if (rating !== 'fail') gameState.challengesSolved++;
+
+  container.innerHTML = `
+    <div class="challenge-overlay">
+      <div class="challenge-box">
+        <div class="ch-title">POWER SURGE</div>
+        <div class="ch-result ${cls}">${label}</div>
+        <div class="ch-reward">${power > 0 ? `+${power} MW for ${duration}s` : 'No bonus power'}</div>
+        <button class="btn btn-primary" onclick="dismissChallenge()">OK</button>
+      </div>
+    </div>
+  `;
+
+  if (power > 0) toast(`⚡ Power Surge: +${power} MW for ${duration}s!`, 'success');
+
+  // Auto-dismiss result after 3 seconds
+  setTimeout(dismissChallenge, 3000);
+}
+
+function dismissChallenge() {
+  const container = document.getElementById('challenge-root');
+  if (container) container.innerHTML = '';
+  activeChallengeData = null;
+}
+
+function skipChallenge() {
+  if (challengeInterval) { clearInterval(challengeInterval); challengeInterval = null; }
+  dismissChallenge();
+}
+
+// ─── CALIBRATION: Stop the needle in the green zone ─────────
+
+function startCalibrationChallenge(container) {
+  const scale = getChallengeScale();
+  const zoneStart = 30 + Math.floor(Math.random() * 30); // 30-60%
+  const zoneWidth = Math.max(6, 12 + Math.floor(Math.random() * 8) - scale.tier * 2);  // shrinks with tier
+  let needlePos = 0;
+  let direction = 1;
+  let speed = (1.5 + Math.random() * 1.5) * scale.speedMult;
+  let timeLeft = 6000;
+  let locked = false;
+
+  container.innerHTML = `
+    <div class="challenge-overlay">
+      <div class="challenge-box">
+        <div class="ch-title">⚡ POWER SURGE: CALIBRATION</div>
+        <div class="ch-subtitle">Click when the needle is in the GREEN zone!</div>
+        <div class="ch-timer" id="cal-timer">6.0s</div>
+        <div class="calibration-track" id="cal-track" onclick="calibrationClick()">
+          <div class="calibration-zone" style="left:${zoneStart}%;width:${zoneWidth}%"></div>
+          <div class="calibration-needle" id="cal-needle" style="left:0%"></div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:6px;">Click the bar or press SPACE</div>
+        <button class="btn btn-sm" style="margin-top:8px;opacity:0.5;" onclick="skipChallenge()">Skip</button>
+      </div>
+    </div>
+  `;
+
+  const needleEl = () => document.getElementById('cal-needle');
+  const timerEl = () => document.getElementById('cal-timer');
+
+  challengeInterval = setInterval(() => {
+    if (locked) return;
+    needlePos += direction * speed;
+    if (needlePos >= 100) { needlePos = 100; direction = -1; }
+    if (needlePos <= 0) { needlePos = 0; direction = 1; }
+    const ne = needleEl();
+    if (ne) ne.style.left = needlePos + '%';
+
+    timeLeft -= 30;
+    const te = timerEl();
+    if (te) te.textContent = (timeLeft / 1000).toFixed(1) + 's';
+
+    if (timeLeft <= 0) {
+      locked = true;
+      clearInterval(challengeInterval);
+      challengeInterval = null;
+      endChallenge('fail', container);
+    }
+  }, 30);
+
+  window._calibrationClick = function() {
+    if (locked) return;
+    locked = true;
+    clearInterval(challengeInterval);
+    challengeInterval = null;
+
+    // Check position
+    const inZone = needlePos >= zoneStart && needlePos <= zoneStart + zoneWidth;
+    const zoneMid = zoneStart + zoneWidth / 2;
+    const distFromCenter = Math.abs(needlePos - zoneMid);
+
+    if (!inZone) {
+      endChallenge('fail', container);
+    } else if (distFromCenter <= zoneWidth * 0.2) {
+      endChallenge('perfect', container);
+    } else if (distFromCenter <= zoneWidth * 0.5) {
+      endChallenge('good', container);
+    } else {
+      endChallenge('ok', container);
+    }
+  };
+
+  // Override the onclick
+  window.calibrationClick = window._calibrationClick;
+}
+
+// ─── SEQUENCE: Remember and repeat the color pattern ────────
+
+function startSequenceChallenge(container) {
+  const seqLength = 4 + Math.floor(Math.random() * 3) + getChallengeScale().seqExtra; // scales up
+  const sequence = [];
+  for (let i = 0; i < seqLength; i++) {
+    sequence.push(Math.floor(Math.random() * 4));
+  }
+  let playerInput = [];
+  let phase = 'showing'; // 'showing' | 'input' | 'done'
+  let showIdx = 0;
+
+  container.innerHTML = `
+    <div class="challenge-overlay">
+      <div class="challenge-box">
+        <div class="ch-title">⚡ POWER SURGE: SEQUENCE</div>
+        <div class="ch-subtitle" id="seq-subtitle">Watch the pattern...</div>
+        <div class="sequence-grid" id="seq-grid">
+          <div class="seq-btn" data-color="0" onclick="seqInput(0)"></div>
+          <div class="seq-btn" data-color="1" onclick="seqInput(1)"></div>
+          <div class="seq-btn" data-color="2" onclick="seqInput(2)"></div>
+          <div class="seq-btn" data-color="3" onclick="seqInput(3)"></div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);" id="seq-progress"></div>
+        <button class="btn btn-sm" style="margin-top:8px;opacity:0.5;" onclick="skipChallenge()">Skip</button>
+      </div>
+    </div>
+  `;
+
+  // Show sequence
+  function flashNext() {
+    if (showIdx >= sequence.length) {
+      phase = 'input';
+      const sub = document.getElementById('seq-subtitle');
+      if (sub) sub.textContent = 'Now repeat the pattern!';
+      const prog = document.getElementById('seq-progress');
+      if (prog) prog.textContent = `0 / ${seqLength}`;
+      return;
+    }
+
+    const btns = document.querySelectorAll('.seq-btn');
+    const btn = btns[sequence[showIdx]];
+    if (btn) {
+      btn.classList.add('flash');
+      setTimeout(() => btn.classList.remove('flash'), 400);
+    }
+    showIdx++;
+    setTimeout(flashNext, 600);
+  }
+
+  setTimeout(flashNext, 500);
+
+  window.seqInput = function(color) {
+    if (phase !== 'input') return;
+
+    const btns = document.querySelectorAll('.seq-btn');
+    const expected = sequence[playerInput.length];
+
+    if (color === expected) {
+      btns[color].classList.add('correct');
+      setTimeout(() => btns[color].classList.remove('correct'), 300);
+      playerInput.push(color);
+
+      const prog = document.getElementById('seq-progress');
+      if (prog) prog.textContent = `${playerInput.length} / ${seqLength}`;
+
+      if (playerInput.length === sequence.length) {
+        phase = 'done';
+        // Score based on sequence length
+        const elapsed = Date.now() - activeChallengeData.startTime;
+        if (elapsed < 5000 + seqLength * 400) {
+          endChallenge('perfect', container);
+        } else if (elapsed < 8000 + seqLength * 600) {
+          endChallenge('good', container);
+        } else {
+          endChallenge('ok', container);
+        }
+      }
+    } else {
+      btns[color].classList.add('wrong');
+      setTimeout(() => btns[color].classList.remove('wrong'), 500);
+      phase = 'done';
+      // Allow partial credit
+      if (playerInput.length >= sequence.length * 0.5) {
+        endChallenge('ok', container);
+      } else {
+        endChallenge('fail', container);
+      }
+    }
+  };
+}
+
+// ─── OVERLOAD: Rapid-click to fill the meter ────────────────
+
+function startOverloadChallenge(container) {
+  const scale = getChallengeScale();
+  const target = 25 + Math.floor(Math.random() * 15) + scale.clickExtra; // scales up
+  let clicks = 0;
+  let timeLeft = Math.max(4000, 6000 - scale.timePenalty); // gets tighter
+
+  container.innerHTML = `
+    <div class="challenge-overlay">
+      <div class="challenge-box">
+        <div class="ch-title">⚡ POWER SURGE: OVERLOAD</div>
+        <div class="ch-subtitle">Smash the button to fill the meter!</div>
+        <div class="ch-timer" id="ol-timer">6.0s</div>
+        <div class="overload-meter">
+          <div class="overload-fill" id="ol-fill" style="width:0%"></div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-bottom:4px;" id="ol-count">0 / ${target}</div>
+        <button class="overload-btn" onclick="overloadClick()">⚡<br>SMASH</button>
+        <button class="btn btn-sm" style="margin-top:4px;opacity:0.5;" onclick="skipChallenge()">Skip</button>
+      </div>
+    </div>
+  `;
+
+  challengeInterval = setInterval(() => {
+    timeLeft -= 30;
+    const te = document.getElementById('ol-timer');
+    if (te) te.textContent = (Math.max(0, timeLeft) / 1000).toFixed(1) + 's';
+
+    if (timeLeft <= 0) {
+      clearInterval(challengeInterval);
+      challengeInterval = null;
+      const pct = clicks / target;
+      if (pct >= 1)     endChallenge('perfect', container);
+      else if (pct >= 0.75) endChallenge('good', container);
+      else if (pct >= 0.5)  endChallenge('ok', container);
+      else                   endChallenge('fail', container);
+    }
+  }, 30);
+
+  window.overloadClick = function() {
+    clicks++;
+    const fill = document.getElementById('ol-fill');
+    const count = document.getElementById('ol-count');
+    const pct = Math.min(100, (clicks / target) * 100);
+    if (fill) fill.style.width = pct + '%';
+    if (count) count.textContent = `${clicks} / ${target}`;
+
+    // Completed early = perfect
+    if (clicks >= target && timeLeft > 1000) {
+      clearInterval(challengeInterval);
+      challengeInterval = null;
+      endChallenge('perfect', container);
+    }
+  };
+}
+
+// Space bar handler for challenges
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && activeChallengeData) {
+    e.preventDefault();
+    if (activeChallengeData.type === 'calibration' && window.calibrationClick) {
+      window.calibrationClick();
+    } else if (activeChallengeData.type === 'overload' && window.overloadClick) {
+      window.overloadClick();
+    }
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════
+// MODAL / TOAST / UTILITIES
+// ═══════════════════════════════════════════════════════════════
+
+function showModal(content) {
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `
+    <div class="modal-overlay" onclick="closeModal()">
+      <div class="modal" onclick="event.stopPropagation()">
+        ${content}
+      </div>
+    </div>
+  `;
+}
+
+function closeModal() {
+  document.getElementById('modal-root').innerHTML = '';
+}
+
+function toast(msg, type = '') {
+  const container = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+function formatNum(n) {
+  if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e4) return (n / 1e3).toFixed(1) + 'K';
+  return n.toLocaleString();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SAVE / LOAD / EXPORT / IMPORT
+// ═══════════════════════════════════════════════════════════════
+
+function serializeState(state) {
+  // Convert Sets to arrays for JSON
+  return {
+    ...state,
+    unlockedRecipes: [...state.unlockedRecipes],
+    unlockedMachines: [...state.unlockedMachines],
+    completedMilestones: [...state.completedMilestones],
+  };
+}
+
+function deserializeState(obj) {
+  // Convert arrays back to Sets
+  obj.unlockedRecipes = new Set(obj.unlockedRecipes);
+  obj.unlockedMachines = new Set(obj.unlockedMachines);
+  obj.completedMilestones = new Set(obj.completedMilestones);
+  // Fill in any missing fields from schema updates
+  const defaults = newGameState();
+  for (const key of Object.keys(defaults)) {
+    if (!(key in obj)) obj[key] = defaults[key];
+  }
+  return obj;
+}
+
+function autoSave() {
+  if (!gameState || gameState.tick < 5) return;
+  try {
+    const payload = {
+      version: SAVE_VERSION,
+      browserId: getBrowserId(),
+      savedAt: Date.now(),
+      state: serializeState(gameState),
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+    const el = document.getElementById('status-saved');
+    if (el) el.textContent = 'Saved';
+    setTimeout(() => { if (el) el.textContent = ''; }, 2000);
+  } catch (e) {
+    console.warn('Auto-save failed:', e);
+  }
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const payload = JSON.parse(raw);
+    // Check TTL
+    if (Date.now() - payload.savedAt > SAVE_TTL_MS) {
+      localStorage.removeItem(SAVE_KEY);
+      return null;
+    }
+    // Check version compatibility
+    if (payload.version !== SAVE_VERSION) {
+      localStorage.removeItem(SAVE_KEY);
+      return null;
+    }
+    return deserializeState(payload.state);
+  } catch (e) {
+    console.warn('Load failed:', e);
+    localStorage.removeItem(SAVE_KEY);
+    return null;
+  }
+}
+
+function exportSave() {
+  if (!gameState) return;
+  const payload = {
+    version: SAVE_VERSION,
+    browserId: getBrowserId(),
+    savedAt: Date.now(),
+    state: serializeState(gameState),
+  };
+  const json = JSON.stringify(payload);
+  const encoded = btoa(unescape(encodeURIComponent(json)));
+  // Download as file
+  const blob = new Blob([encoded], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const d = new Date();
+  a.download = `factoryio-save-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}.sav`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Save exported!', 'success');
+}
+
+function showImportDialog() {
+  showModal(`
+    <div class="modal-title">IMPORT SAVE</div>
+    <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);margin-bottom:16px;">
+      Select a .sav file exported from this browser.
+    </div>
+    <input type="file" id="import-file" accept=".sav,.txt" style="margin-bottom:16px;font-family:var(--font-mono);font-size:12px;color:var(--text);">
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="doImport()">Import</button>
+    </div>
+  `);
+}
+
+function doImport() {
+  const input = document.getElementById('import-file');
+  if (!input || !input.files[0]) {
+    toast('No file selected', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const encoded = e.target.result.trim();
+      const json = decodeURIComponent(escape(atob(encoded)));
+      const payload = JSON.parse(json);
+      // Version check
+      if (payload.version !== SAVE_VERSION) {
+        toast('Incompatible save version', 'error');
+        return;
+      }
+      // Browser ID check
+      if (payload.browserId !== getBrowserId()) {
+        toast('This save belongs to a different browser!', 'error');
+        return;
+      }
+      const loaded = deserializeState(payload.state);
+      closeModal();
+      startGame(loaded);
+    } catch (err) {
+      toast('Invalid save file', 'error');
+    }
+  };
+  reader.readAsText(input.files[0]);
+}
+
+function confirmNewRun() {
+  showModal(`
+    <div class="modal-title">NEW RUN</div>
+    <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);margin-bottom:16px;">
+      This will erase your current factory and start fresh.<br>
+      Consider exporting your save first!
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn" style="border-color:var(--red);color:var(--red);" onclick="doNewRun()">WIPE & RESTART</button>
+    </div>
+  `);
+}
+
+function doNewRun() {
+  localStorage.removeItem(SAVE_KEY);
+  if (gameInterval) clearInterval(gameInterval);
+  closeModal();
+  gameState = newGameState();
+  conveyor.items = [];
+  conveyor.lastSpawn = 0;
+  conveyor.throughput = 0;
+  conveyor.resourcePool = ['#444'];
+  updateUI();
+  renderCurrentPage();
+  gameInterval = setInterval(gameTick, 1000);
+  toast('New run started!', 'success');
+}
+
+// Navigation
+document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+  el.addEventListener('click', () => switchPage(el.dataset.page));
+});
+
+// Listen for recipe select change in modal
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'modal-recipe' || e.target.id === 'modal-clock') updateRecipeDetail();
+});
+
+// Prevent accidental tab close
+window.addEventListener('beforeunload', (e) => {
+  if (gameState && gameState.tick > 10) {
+    autoSave(); // save on close
+    e.preventDefault();
+    e.returnValue = 'Your factory progress has been saved.';
+  }
+});
+
+// ─── INTRO CONVEYOR ANIMATION ───────────────────────────────
+(function initIntroConveyor() {
+  const introConveyor = {
+    items: [],
+    trackOffset: 0,
+    lastFrame: 0,
+    speed: 60,
+    colors: ['#f59e0b','#3b82f6','#ef4444','#10b981','#8b5cf6','#ec4899','#06b6d4','#84cc16'],
+    lastSpawn: 0,
+  };
+  function animateIntro(now) {
+    const canvas = document.getElementById('intro-conveyor-canvas');
+    if (!canvas || canvas.closest('#intro-screen')?.classList.contains('fade-out')) return;
+    requestAnimationFrame(animateIntro);
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      ctx.scale(dpr, dpr);
+    }
+    const W = rect.width, H = rect.height;
+    const dt = introConveyor.lastFrame ? (now - introConveyor.lastFrame) / 1000 : 0;
+    introConveyor.lastFrame = now;
+    ctx.clearRect(0, 0, W, H);
+    const midY = H / 2;
+    // Dashed track
+    introConveyor.trackOffset = (introConveyor.trackOffset + dt * 40) % 16;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(180, 114, 8, 0.4)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 8]);
+    ctx.lineDashOffset = -introConveyor.trackOffset;
+    ctx.beginPath();
+    ctx.moveTo(0, midY);
+    ctx.lineTo(W, midY);
+    ctx.stroke();
+    ctx.restore();
+    // Subtle glow
+    ctx.save();
+    ctx.strokeStyle = 'rgba(180, 114, 8, 0.15)';
+    ctx.lineWidth = 6;
+    ctx.shadowColor = 'rgba(180, 114, 8, 0.4)';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.moveTo(0, midY);
+    ctx.lineTo(W, midY);
+    ctx.stroke();
+    ctx.restore();
+    // Spawn items
+    const interval = 400;
+    if (now - introConveyor.lastSpawn >= interval) {
+      const color = introConveyor.colors[Math.floor(Math.random() * introConveyor.colors.length)];
+      introConveyor.items.push({ x: -10, color });
+      introConveyor.lastSpawn = now;
+    }
+    // Move & draw items
+    const sz = 14, r = 3;
+    for (let i = introConveyor.items.length - 1; i >= 0; i--) {
+      const item = introConveyor.items[i];
+      item.x += introConveyor.speed * dt;
+      if (item.x > W + 20) { introConveyor.items.splice(i, 1); continue; }
+      const ix = item.x - sz / 2, iy = midY - sz / 2;
+      ctx.beginPath();
+      ctx.moveTo(ix + r, iy);
+      ctx.lineTo(ix + sz - r, iy);
+      ctx.quadraticCurveTo(ix + sz, iy, ix + sz, iy + r);
+      ctx.lineTo(ix + sz, iy + sz - r);
+      ctx.quadraticCurveTo(ix + sz, iy + sz, ix + sz - r, iy + sz);
+      ctx.lineTo(ix + r, iy + sz);
+      ctx.quadraticCurveTo(ix, iy + sz, ix, iy + sz - r);
+      ctx.lineTo(ix, iy + r);
+      ctx.quadraticCurveTo(ix, iy, ix + r, iy);
+      ctx.closePath();
+      ctx.fillStyle = item.color;
+      ctx.globalAlpha = 0.85;
+      ctx.fill();
+      ctx.globalAlpha = 0.15;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+  requestAnimationFrame(animateIntro);
+})();
+
+// On load: check for existing save and show continue button
+(function checkExistingSave() {
+  const loaded = loadFromStorage();
+  if (loaded) {
+    const elapsed = Date.now() - loaded.startTime;
+    const h = Math.floor(elapsed / 3600000);
+    const m = Math.floor((elapsed % 3600000) / 60000);
+
+    // Compute save summary stats
+    const floorsUnlocked = loaded.floors ? loaded.floors.filter(f => f.unlocked).length : 0;
+    let machines = 0;
+    if (loaded.floors) {
+      for (const floor of loaded.floors) {
+        if (!floor.unlocked) continue;
+        for (const slot of floor.slots) {
+          if (slot.machine && slot.recipe) machines++;
+        }
+      }
+    }
+    const researchDone = loaded.research ? Object.values(loaded.research).filter(r => r.completed).length : 0;
+    const totalResearch = Object.keys(RESEARCH).length;
+    let netWorth = 0;
+    if (loaded.storage) {
+      for (const [res, qty] of Object.entries(loaded.storage)) {
+        if (RESOURCES[res]) netWorth += Math.floor(qty) * RESOURCES[res].value;
+      }
+    }
+    const nwLabel = netWorth >= 1e6 ? (netWorth / 1e6).toFixed(1) + 'M' : netWorth >= 1e3 ? (netWorth / 1e3).toFixed(1) + 'K' : String(netWorth);
+
+    // Insert save summary card
+    const summary = document.createElement('div');
+    summary.style.cssText = 'background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:14px 24px;margin-bottom:4px;text-align:center;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);letter-spacing:1px;min-width:260px;';
+    summary.innerHTML = `
+      <div style="font-family:var(--font-display);font-size:13px;color:var(--amber);margin-bottom:8px;letter-spacing:2px;">SAVE FOUND</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;text-align:left;">
+        <span>Session</span><span style="color:var(--text-bright);text-align:right;">${h}h ${m}m</span>
+        <span>Floors</span><span style="color:var(--text-bright);text-align:right;">${floorsUnlocked} / ${loaded.floors ? loaded.floors.length : '?'}</span>
+        <span>Machines</span><span style="color:var(--text-bright);text-align:right;">${machines}</span>
+        <span>Research</span><span style="color:var(--text-bright);text-align:right;">${researchDone} / ${totalResearch}</span>
+        <span>Net Worth</span><span style="color:var(--amber);text-align:right;">${nwLabel}</span>
+      </div>
+    `;
+    const btns = document.getElementById('intro-buttons');
+    btns.parentNode.insertBefore(summary, btns);
+
+    const continueBtn = document.createElement('button');
+    continueBtn.className = 'btn btn-primary';
+    continueBtn.style.cssText = 'font-size:16px;padding:12px 40px;letter-spacing:2px;';
+    continueBtn.textContent = 'CONTINUE';
+    continueBtn.onclick = () => startGame(loaded);
+    btns.insertBefore(continueBtn, btns.firstChild);
+    // Restyle new game button as secondary
+    const newBtn = btns.querySelector('button:last-child');
+    newBtn.classList.remove('btn-primary');
+    newBtn.style.opacity = '0.6';
+    newBtn.style.fontSize = '13px';
+    newBtn.style.padding = '8px 30px';
+  }
+})();
+
+</script>
+</body>
+</html>
