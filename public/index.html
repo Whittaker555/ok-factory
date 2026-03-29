@@ -1483,6 +1483,265 @@ select option { background: var(--bg-raised); color: var(--text); }
   0%, 100% { border-color: var(--accent); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7), 0 0 20px rgba(245, 158, 11, 0.15); }
   50%      { border-color: rgba(245, 158, 11, 0.6); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7), 0 0 30px rgba(245, 158, 11, 0.25); }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   MACHINE GRID & TABLE SCROLL — base classes (used by mobile too)
+   ═══════════════════════════════════════════════════════════════ */
+
+.machine-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--floor-cols, 3), 1fr);
+  gap: 12px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Bottom nav: hidden on desktop, shown on mobile */
+#bottom-nav { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE — ≤768px
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+  /* Core layout */
+  body {
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+    height: 100dvh;
+  }
+
+  #app {
+    grid-template-columns: 1fr;
+    grid-template-rows: 54px 1fr;
+    height: 100dvh;
+    min-height: -webkit-fill-available;
+  }
+
+  #sidebar   { display: none; }
+  #statusbar { display: none; }
+
+  #main {
+    padding: 12px;
+    padding-bottom: calc(56px + env(safe-area-inset-bottom) + 8px);
+  }
+
+  /* ── Topbar ── */
+  #topbar {
+    padding-left:  max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    gap: 8px;
+  }
+
+  /* Hide the "— v0.1" subtitle */
+  #topbar .logo > span:not(.brand) { display: none; }
+
+  /* Hide all topbar stats except Net Worth */
+  .topbar-stats > .topbar-stat { display: none; }
+  .topbar-stats > .topbar-stat:has(#stat-networth) { display: flex; }
+
+  /* Hide share button */
+  .share-btn { display: none; }
+
+  /* Slim down the crank container */
+  .topbar-stats > div:last-child {
+    border-left: none;
+    padding-left: 0;
+    gap: 6px;
+  }
+
+  /* Adequate touch target for CRANK */
+  .crank-btn {
+    padding: 10px 14px;
+    font-size: 11px;
+    min-height: 44px;
+  }
+
+  /* Hide the MW bar (keep deficit label) */
+  .manual-power-indicator .mp-bar,
+  #manual-mw { display: none; }
+
+  /* ── Bottom nav ── */
+  #bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(56px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--bg-panel, var(--bg-raised));
+    border-top: 1px solid var(--border);
+    z-index: 200;
+    justify-content: space-around;
+    align-items: stretch;
+  }
+
+  .bnav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 3px;
+    cursor: pointer;
+    padding: 6px 2px;
+    min-height: 44px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    color: var(--text-dim);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .bnav-item.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    background: var(--accent-dim, rgba(245,158,11,0.08));
+  }
+
+  .bnav-icon { font-size: 18px; line-height: 1; }
+
+  .bnav-label {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  /* ── Modals ── */
+  .modal {
+    min-width: unset;
+    width: calc(100vw - 24px);
+    max-width: unset;
+    max-height: 88vh;
+    padding: 16px;
+  }
+
+  /* Prevent iOS auto-zoom on input focus */
+  .modal select,
+  .modal input[type="number"],
+  .modal input[type="text"] {
+    font-size: 16px;
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+
+  /* ── Machine grid ── */
+  .machine-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .machine-slot {
+    padding: 10px;
+  }
+
+  .machine-slot.filled .btn-sm {
+    min-height: 36px;
+    min-width: 36px;
+    padding: 6px 10px;
+  }
+
+  /* ── Data tables ── */
+  .data-table {
+    min-width: 480px;
+    white-space: nowrap;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  /* ── Grid layout classes ── */
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .grid-4          { grid-template-columns: 1fr 1fr; }
+
+  /* ── Challenge overlay ── */
+  .challenge-overlay {
+    bottom: calc(56px + env(safe-area-inset-bottom) + 8px);
+    right: 8px;
+    left: 8px;
+  }
+
+  .challenge-box {
+    width: 100%;
+    max-width: unset;
+  }
+
+  .seq-btn    { width: 56px; height: 56px; }
+  .overload-btn { width: 90px; height: 90px; }
+
+  /* ── Touch targets — global ── */
+  button, .btn {
+    min-height: 40px;
+  }
+
+  .btn-sm {
+    min-height: 36px;
+  }
+
+  /* ── Toasts: keep below topbar ── */
+  .toast-container {
+    top: 62px;
+    right: 12px;
+    left: 12px;
+    max-width: unset;
+  }
+
+  .toast { max-width: 100%; }
+
+  /* ── Intro screen ── */
+  .intro-hero {
+    bottom: 24px;
+    left: 16px;
+    right: 16px;
+    max-width: 100%;
+  }
+
+  .intro-hero h1 {
+    font-size: clamp(28px, 9vw, 48px);
+  }
+
+  .intro-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .intro-actions .btn,
+  .intro-actions .btn-primary {
+    width: 100%;
+    min-height: 48px;
+    font-size: 14px;
+  }
+
+  .intro-wordmark {
+    top: 16px;
+    left: 16px;
+  }
+
+  /* ── Cards ── */
+  .card { padding: 12px; }
+
+  /* ── Score export ── */
+  .score-export {
+    font-size: 9px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+}
+
+/* Very small phones (≤420px): single column machine grid */
+@media (max-width: 420px) {
+  .machine-grid { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
@@ -1628,6 +1887,38 @@ select option { background: var(--bg-raised); color: var(--text); }
   </footer>
 
 </div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav id="bottom-nav">
+  <div class="bnav-item active" data-page="dashboard">
+    <span class="bnav-icon">📊</span>
+    <span class="bnav-label">Dash</span>
+  </div>
+  <div class="bnav-item" data-page="floors">
+    <span class="bnav-icon">🏭</span>
+    <span class="bnav-label">Factory</span>
+  </div>
+  <div class="bnav-item" data-page="research">
+    <span class="bnav-icon">🔬</span>
+    <span class="bnav-label">Research</span>
+  </div>
+  <div class="bnav-item" data-page="storage">
+    <span class="bnav-icon">📦</span>
+    <span class="bnav-label">Storage</span>
+  </div>
+  <div class="bnav-item" data-page="power">
+    <span class="bnav-icon">⚡</span>
+    <span class="bnav-label">Power</span>
+  </div>
+  <div class="bnav-item" data-page="codex">
+    <span class="bnav-icon">📖</span>
+    <span class="bnav-label">Codex</span>
+  </div>
+  <div class="bnav-item" data-page="milestones">
+    <span class="bnav-icon">🏆</span>
+    <span class="bnav-label">Goals</span>
+  </div>
+</nav>
 
 <!-- IDLE VIEW (fullscreen rain screensaver) -->
 <div id="idle-view">
@@ -2802,8 +3093,9 @@ function startGame(resume) {
 
 function switchPage(page) {
   currentPage = page;
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item, .bnav-item').forEach(el => el.classList.remove('active'));
   document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
+  document.querySelector(`.bnav-item[data-page="${page}"]`)?.classList.add('active');
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
   document.getElementById(`page-${page}`)?.classList.add('active');
   renderCurrentPage();
@@ -3162,7 +3454,7 @@ function renderDashboard() {
           <span class="text-dim" style="font-size:10px;font-family:var(--font-mono);">items/min</span>
         </div>
         ${sortedRates.length === 0 ? '<div class="text-dim" style="font-family:var(--font-mono);font-size:12px;">No production yet. Build some machines!</div>' : `
-        <table class="data-table">
+        <div class="table-scroll"><table class="data-table">
           <tr><th>Resource</th><th>Stored</th><th>+Prod</th><th>-Cons</th><th>Net</th></tr>
           ${sortedRates.slice(0, 15).map(r => `
             <tr>
@@ -3176,7 +3468,7 @@ function renderDashboard() {
               <td class="${r.net >= 0 ? 'text-green' : 'text-red'}">${r.net >= 0 ? '+' : ''}${r.net.toFixed(1)}</td>
             </tr>
           `).join('')}
-        </table>`}
+        </table></div>`}
       </div>
       <div class="card">
         <div class="card-header">
@@ -3407,7 +3699,7 @@ function renderFloors() {
         ${showMax ? '📐 100% Rates' : '📊 Current Rates'}
       </button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(${getFloorColumns(currentFloor)}, 1fr);gap:12px;">${slotsHtml}</div>
+    <div class="machine-grid" style="--floor-cols:${getFloorColumns(currentFloor)}">${slotsHtml}</div>
     ${buyRowHtml}
   `;
 }
@@ -3690,7 +3982,7 @@ function renderStorage() {
     html += `
       <div class="card">
         <div class="card-title" style="margin-bottom:8px;">${catNames[cat] || cat}</div>
-        <table class="data-table">
+        <div class="table-scroll"><table class="data-table">
           <tr><th>Resource</th><th>Tier</th><th>Stored</th><th>Value/unit</th><th>Total Value</th><th>+Prod/min</th><th>-Cons/min</th><th>Net/min</th></tr>
           ${resources.filter(([id]) => (gameState.storage[id] || 0) > 0.1 || rates[id]).map(([id, res]) => {
             const stored = Math.floor(gameState.storage[id] || 0);
@@ -3709,7 +4001,7 @@ function renderStorage() {
               </tr>
             `;
           }).join('')}
-        </table>
+        </table></div>
       </div>
     `;
   }
@@ -3794,7 +4086,7 @@ function renderPower() {
       <div class="card">
         <div class="card-title" style="color:var(--green);margin-bottom:8px;">GENERATORS (${generators.length})</div>
         ${generators.length === 0 ? '<div class="text-dim" style="font-family:var(--font-mono);font-size:12px;">No generators built — using emergency power</div>' : `
-        <table class="data-table">
+        <div class="table-scroll"><table class="data-table">
           <tr><th>Machine</th><th>Floor</th><th>Output</th><th>Fuel</th></tr>
           ${generators.map(g => `
             <tr>
@@ -3804,12 +4096,12 @@ function renderPower() {
               <td class="text-dim">${g.recipe ? g.recipe.name : 'No fuel set'}</td>
             </tr>
           `).join('')}
-        </table>`}
+        </table></div>`}
       </div>
       <div class="card">
         <div class="card-title" style="color:var(--orange);margin-bottom:8px;">CONSUMERS (${consumers.length})</div>
         ${consumers.length === 0 ? '<div class="text-dim" style="font-family:var(--font-mono);font-size:12px;">No machines consuming power</div>' : `
-        <table class="data-table">
+        <div class="table-scroll"><table class="data-table">
           <tr><th>Machine</th><th>Floor</th><th>Draw</th><th>Recipe</th></tr>
           ${consumers.map(c => `
             <tr>
@@ -3819,7 +4111,7 @@ function renderPower() {
               <td class="text-dim">${c.recipe ? c.recipe.name : 'Idle'}</td>
             </tr>
           `).join('')}
-        </table>`}
+        </table></div>`}
       </div>
     </div>
   `;
@@ -3909,7 +4201,7 @@ function renderCodex() {
             </div>
             <span class="text-dim" style="font-size:10px;font-family:var(--font-mono);">${machine.power < 0 ? 'Generates ' + Math.abs(machine.power) + ' MW' : machine.power + ' MW'} · ${escapeHtml(machine.desc)}</span>
           </div>
-          <table class="data-table">
+          <div class="table-scroll"><table class="data-table">
             <tr><th>Recipe</th><th>Tier</th><th>Inputs (/min)</th><th>Outputs (/min)</th><th>Cycle</th><th>Status</th></tr>
             ${visibleRecipes.map(r => {
               const rateMultiplier = 60 / r.time;
@@ -3927,7 +4219,7 @@ function renderCodex() {
                 <td>${r.unlocked ? '<span class="text-green">✓ Unlocked</span>' : '<span class="text-dim">🔒 Locked</span>'}</td>
               </tr>`;
             }).join('')}
-          </table>
+          </table></div>
         </div>
       `;
     }
@@ -4660,7 +4952,7 @@ function doNewRun() {
 }
 
 // Navigation
-document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+document.querySelectorAll('.nav-item[data-page], .bnav-item[data-page]').forEach(el => {
   el.addEventListener('click', () => switchPage(el.dataset.page));
 });
 
