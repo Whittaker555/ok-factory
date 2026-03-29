@@ -1246,8 +1246,8 @@ select option { background: var(--bg-raised); color: var(--text); }
   transition: opacity 0.4s ease;
 }
 #tutorial-overlay.active { opacity: 1; pointer-events: auto; }
-#tutorial-overlay.active .tutorial-backdrop { pointer-events: auto; }
-#tutorial-overlay.active.passthrough .tutorial-backdrop { pointer-events: none; }
+#tutorial-overlay.active.passthrough { pointer-events: none; }
+#tutorial-overlay.active.passthrough .tutorial-card { pointer-events: auto; }
 #tutorial-overlay.has-spotlight .tutorial-backdrop { background: transparent; backdrop-filter: none; }
 
 .tutorial-backdrop {
@@ -1271,7 +1271,7 @@ select option { background: var(--bg-raised); color: var(--text); }
   box-shadow: 0 0 60px rgba(245, 158, 11, 0.08), 0 20px 40px rgba(0,0,0,0.5);
   animation: tutorialSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: auto;
-  z-index: 10002;
+  z-index: 10003;
 }
 
 @keyframes tutorialSlideUp {
