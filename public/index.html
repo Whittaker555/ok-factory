@@ -670,6 +670,41 @@ select option { background: var(--bg-raised); color: var(--text); }
   margin-top: 4px;
 }
 
+.slot-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: 8px;
+  padding: 0 7px 0 5px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  margin-right: 4px;
+  margin-bottom: 2px;
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  line-height: 1.5;
+}
+.slot-pill .pill-symbol {
+  margin-right: 2px;
+  font-size: 12px;
+}
+.pill-swatch {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.pill-rate {
+  opacity: 0.6;
+  font-weight: 400;
+}
+
 .machine-slot.filled .slot-efficiency {
   margin-top: 6px;
 }
@@ -1723,6 +1758,93 @@ const RESOURCES = {
   singularity_cell:      { name: 'Singularity Cell',     tier: 6, value: 500000, color: '#dc2626', category: 'elite' },
 };
 
+// ─── RESOURCE SYMBOLS ─────────────────────────────────────────
+const RESOURCE_SYMBOLS = {
+  // T0 Raw
+  iron_ore:              'Fe',
+  copper_ore:            'Cu',
+  limestone:             'Ca',
+  coal:                  'C',
+  crude_oil:             'OIL',
+  raw_quartz:            'Qz',
+  sulfur:                'S',
+  bauxite:               'Bx',
+  caterium_ore:          'Ct',
+  uranium:               'U',
+  nitrogen_gas:          'N₂',
+  water:                 'H₂O',
+  // T1 Refined
+  iron_ingot:            '[Fe]',
+  copper_ingot:          '[Cu]',
+  steel_ingot:           '[St]',
+  concrete:              'Con',
+  quartz_crystal:        '[Qz]',
+  coke:                  'Cok',
+  silica:                'Si',
+  caterium_ingot:        '[Ct]',
+  aluminum_ingot:        '[Al]',
+  plastic:               'Pls',
+  rubber:                'Rub',
+  fuel:                  'Fue',
+  polymer_resin:         'Res',
+  petroleum_coke:        'PCk',
+  alumina_solution:      'AlO',
+  sulfuric_acid:         'H₂SO₄',
+  // T2 Parts
+  iron_plate:            'IPl',
+  iron_rod:              'IRd',
+  copper_wire:           'CWr',
+  screw:                 'Scr',
+  steel_beam:            'SBm',
+  steel_pipe:            'SPp',
+  copper_sheet:          'CSh',
+  quickwire:             'QWr',
+  cable:                 'Cbl',
+  aluminum_sheet:        'ASh',
+  alclad_sheet:          'AlC',
+  empty_canister:        'Can',
+  // T3 Components
+  rotor:                 'Rot',
+  stator:                'Sta',
+  motor:                 'Mot',
+  circuit_board:         'PCB',
+  modular_frame:         'MFr',
+  encased_beam:          'EBm',
+  ai_limiter:            'AiL',
+  crystal_oscillator:    'Osc',
+  electromagnetic_rod:   'EMR',
+  heat_sink:             'HSk',
+  fused_wire:            'FWr',
+  // T4 Complex
+  computer:              'CPU',
+  heavy_modular_frame:   'HMF',
+  high_speed_connector:  'HSC',
+  automated_wiring:      'AWr',
+  modular_engine:        'ME',
+  adaptive_control:      'AdC',
+  radio_control:         'RCU',
+  cooling_device:        'CLD',
+  battery:               'Bat',
+  uranium_fuel_rod:      'UFR',
+  pressure_tube:         'PTb',
+  // T5 Advanced
+  supercomputer:         'SUP',
+  turbo_motor:           'TMot',
+  cooling_system:        'CSys',
+  fused_frame:           'FFr',
+  magnetic_field_gen:    'MFG',
+  thermal_propulsion:    'TP',
+  plutonium_pellet:      'PuP',
+  plutonium_fuel_rod:    'PuFR',
+  assembly_director:     'ADir',
+  // T6 Elite
+  nuclear_pasta:         'NuPa',
+  quantum_oscillator:    'QOsc',
+  neural_network:        'NNP',
+  dark_matter_crystal:   'DMC',
+  singularity_cell:      'SnC',
+};
+
 // ─── MACHINE DEFINITIONS ──────────────────────────────────────
 const MACHINES = {
   miner_mk1:     { name: 'Miner Mk.I',     power: 5,   slots: 0, tier: 0, category: 'extraction', desc: 'Extracts raw resources at 30/min' },
@@ -2071,7 +2193,7 @@ function buyRow(floorIdx) {
     floor.slots.push({ machine: null, recipe: null, active: true, clockSpeed: 1.0 });
   }
   floor.rows = rows + 1;
-  toast(`Floor ${rows + 1} constructed on ${floor.name}!`, 'success');
+ 
   renderFloors();
 }
 
@@ -2397,7 +2519,8 @@ function getStats() {
           for (const [res, amount] of Object.entries(recipe.inputs)) {
             const needed = (amount / recipe.time) * powerEff;
             if (needed > 0) {
-              resourceEff = Math.min(resourceEff, Math.min(1, (gameState.storage[res] || 0) / needed));
+              const ratio = Math.min(1, (gameState.storage[res] || 0) / needed);
+              resourceEff = Math.min(resourceEff, ratio);
             }
           }
           const actualEff = powerEff * resourceEff;
@@ -3128,7 +3251,11 @@ function generateScoreText() {
 
 function copyScore() {
   const text = generateScoreText();
-  navigator.clipboard.writeText(text).then(() => toast('Score copied!', 'success'));
+  navigator.clipboard.writeText(text).then(() => {
+    toast('Score copied!', 'success');
+  }).catch(() => {
+    toast('Could not copy link — try again', 'warn');
+  });
 }
 
 // ─── RENDER: FACTORIES ──────────────────────────────────────
@@ -3199,15 +3326,21 @@ function renderFloors() {
       statusTag = ' <span style="color:var(--orange);font-size:9px;">⚠ LOW INPUT</span>';
     }
     if (recipe) {
-      const inputs = Object.entries(recipe.inputs).map(([r, a]) =>
-        `${RESOURCES[r]?.name || r}: ${((a/recipe.time)*displayEff*60).toFixed(1)}/min`
-      ).join(', ');
-      const outputs = Object.entries(recipe.outputs).map(([r, a]) =>
-        `${RESOURCES[r]?.name || r}: ${((a/recipe.time)*displayEff*60).toFixed(1)}/min`
-      ).join(', ');
-
-      if (inputs) ioHtml += `<div class="slot-io">IN: ${escapeHtml(inputs)}</div>`;
-      if (outputs) ioHtml += `<div class="slot-io" style="color:var(--green)">OUT: ${escapeHtml(outputs)}</div>`;
+        const pill = (r, amt, isOut) => {
+          const res = RESOURCES[r] || {};
+          const color = res.color || (isOut ? '#22c55e' : '#71717a');
+          const symbol = RESOURCE_SYMBOLS[r] || '';
+          const name = res.name || r;
+          const rate = ((amt/recipe.time)*displayEff*60).toFixed(1);
+          return `<span class="slot-pill" style="background:${color}22;border-color:${color}66;">` +
+            `<span class="pill-swatch" style="background:${color};box-shadow:0 0 5px ${color}99;outline:1px solid rgba(255,255,255,0.15);"></span>` +
+            `${symbol ? `<span class='pill-symbol'>${symbol}</span>` : ''}${name} <span class="pill-rate">${rate}/min</span>` +
+            `</span>`;
+        };
+        const inputPills = Object.entries(recipe.inputs).map(([r, a]) => pill(r, a, false)).join('');
+        const outputPills = Object.entries(recipe.outputs).map(([r, a]) => pill(r, a, true)).join('');
+        if (inputPills) ioHtml += `<div class="slot-io">IN: ${inputPills}</div>`;
+        if (outputPills) ioHtml += `<div class="slot-io">OUT: ${outputPills}</div>`;
     }
 
     if (eff < 0.5) effClass = 'eff-0';
@@ -3384,12 +3517,12 @@ function updateRecipeDetail() {
 
   const inputs = Object.entries(recipe.inputs).map(([r, a]) => {
     const rate = ((a / recipe.time) * clockSpeed * 60).toFixed(1);
-    return `<span class="res-icon" style="background:${RESOURCES[r]?.color || '#666'}"></span>${RESOURCES[r]?.name}: ${rate}/min`;
+    return `<span class="res-icon" style="background:${RESOURCES[r]?.color || '#666'}"></span>${RESOURCES[r]?.name || r}: ${rate}/min`;
   }).join('<br>');
 
   const outputs = Object.entries(recipe.outputs).map(([r, a]) => {
     const rate = ((a / recipe.time) * clockSpeed * 60).toFixed(1);
-    return `<span class="res-icon" style="background:${RESOURCES[r]?.color || '#666'}"></span>${RESOURCES[r]?.name}: ${rate}/min`;
+    return `<span class="res-icon" style="background:${RESOURCES[r]?.color || '#666'}"></span>${RESOURCES[r]?.name || r}: ${rate}/min`;
   }).join('<br>');
 
   const clockLabel = clockSpeed !== 1 ? ` <span style="color:var(--cyan);">@ x${clockSpeed}</span>` : '';
@@ -3724,7 +3857,7 @@ function renderCodex() {
 
   let html = `
     <div class="page-title">RECIPE CODEX</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:12px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;">
       <div class="page-subtitle" style="margin:0;">ALL KNOWN PRODUCTION RECIPES — ${unlockedCount}/${totalRecipes} UNLOCKED</div>
       <div style="display:flex;align-items:center;gap:12px;">
         <input type="text" id="codex-search" placeholder="Search recipes, resources..." value="${escapeHtml(codexSearch)}"
