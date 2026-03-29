@@ -3046,8 +3046,9 @@ function renderFloors() {
   const floors = gameState.floors;
 
   const tabsHtml = floors.map((f, i) => {
-    if (!f.unlocked) return `<button class="tab-btn" disabled style="opacity:0.3">🔒 ${f.name}</button>`;
-    return `<button class="tab-btn ${i === currentFloor ? 'active' : ''}" onclick="switchFloor(${i})">${f.name}</button>`;
+    const label = `Factory ${i + 1}`;
+    if (!f.unlocked) return `<button class="tab-btn" disabled style="opacity:0.3">🔒 ${label}</button>`;
+    return `<button class="tab-btn ${i === currentFloor ? 'active' : ''}" onclick="switchFloor(${i})">${label}</button>`;
   }).join('');
 
   const floor = floors[currentFloor];
@@ -4236,10 +4237,11 @@ function deserializeState(obj) {
   for (const key of Object.keys(defaults)) {
     if (!(key in obj)) obj[key] = defaults[key];
   }
-  // Migrate floors: add rows field if missing
+  // Migrate floors: add rows field if missing, fix old names
   if (obj.floors) {
     for (let i = 0; i < obj.floors.length; i++) {
       const floor = obj.floors[i];
+      floor.name = `Factory ${i + 1}`;
       if (floor.rows === undefined) {
         const cols = getFloorColumns(i);
         floor.rows = Math.max(1, Math.ceil(floor.slots.length / cols));
