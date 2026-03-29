@@ -113,13 +113,15 @@ const wrapped = `
     newGameState, createSlots, getAllRecipes,
     getMaxClockSpeed, computePower, computeEfficiency,
     getCrankStats, getChallengeScale,
-    getStats, gameTick,
+    getStats, gameTick, gameTickInner,
     serializeState, deserializeState,
     autoSave, loadFromStorage,
     startResearch, completeResearch, checkMilestones,
     renderMilestones, doNewRun,
     get gameState()  { return gameState; },
     set gameState(v) { gameState = v; },
+    get lastTickTime()  { return lastTickTime; },
+    set lastTickTime(v) { lastTickTime = v; },
   };
 `;
 
@@ -130,7 +132,11 @@ let G;
 try { G = require(tmp); } finally { fs.unlinkSync(tmp); }
 
 // Helper: reset global gameState to a fresh state
-function freshState() { G.gameState = G.newGameState(); return G.gameState; }
+function freshState() { G.gameState = G.newGameState(); G.lastTickTime = 0; return G.gameState; }
+
+// Wrap gameTick to always simulate exactly 1 second per call in tests
+const _origGameTick = G.gameTick;
+G.gameTick = function() { G.lastTickTime = 0; _origGameTick(); };
 
 // ═══════════════════════════════════════════════════════════════
 // 2. TESTS

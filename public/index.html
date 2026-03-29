@@ -1908,7 +1908,7 @@ function computeEfficiency() {
   return Math.min(2, powerEff * (1 + milestoneBonus)); // cap at 200%
 }
 
-function gameTick() {
+function gameTickInner(dt) {
   gameState.tick++;
 
   // Auto-save periodically
@@ -1922,13 +1922,13 @@ function gameTick() {
   const { manualUsed } = computePower();
   if (gameState.manualPower > 0) {
     // Drain proportional to usage: if no deficit, no drain; if fully used, drain at 2 MW/s
-    const drainRate = manualUsed > 0 ? 2 : 0;
+    const drainRate = manualUsed > 0 ? 2 * dt : 0;
     gameState.manualPower = Math.max(0, gameState.manualPower - drainRate);
   }
 
   // Decay challenge power timer
   if (gameState.challengePowerTimer > 0) {
-    gameState.challengePowerTimer--;
+    gameState.challengePowerTimer -= dt;
     if (gameState.challengePowerTimer <= 0) {
       gameState.challengePower = 0;
       gameState.challengePowerTimer = 0;
@@ -1953,10 +1953,10 @@ function gameTick() {
 
       const effectiveRate = efficiency * slot.clockSpeed;
 
-      // Check if inputs available (need enough for 1 second of production)
+      // Check if inputs available (need enough for this tick of production)
       let canProduce = true;
       for (const [res, amount] of Object.entries(recipe.inputs)) {
-        const needed = (amount / recipe.time) * effectiveRate;
+        const needed = (amount / recipe.time) * effectiveRate * dt;
         if ((gameState.storage[res] || 0) < needed) {
           canProduce = false;
           gameState.alerts.push({ type: 'warn', msg: `${MACHINES[slot.machine].name} starved: need ${RESOURCES[res].name}` });
@@ -1969,12 +1969,12 @@ function gameTick() {
       if (canProduce) {
         // Consume inputs
         for (const [res, amount] of Object.entries(recipe.inputs)) {
-          const consume = (amount / recipe.time) * effectiveRate;
+          const consume = (amount / recipe.time) * effectiveRate * dt;
           gameState.storage[res] = Math.max(0, (gameState.storage[res] || 0) - consume);
         }
         // Produce outputs
         for (const [res, amount] of Object.entries(recipe.outputs)) {
-          const produce = (amount / recipe.time) * effectiveRate;
+          const produce = (amount / recipe.time) * effectiveRate * dt;
           gameState.storage[res] = (gameState.storage[res] || 0) + produce;
           gameState.totalProduced[res] = (gameState.totalProduced[res] || 0) + produce;
         }
@@ -1992,7 +1992,7 @@ function gameTick() {
     const research = RESEARCH[gameState.activeResearch];
     if (research) {
       // Check if we have the resources (deducted at start)
-      gameState.researchProgress += (100 / research.time);
+      gameState.researchProgress += (100 / research.time) * dt;
       if (gameState.researchProgress >= 100) {
         completeResearch(gameState.activeResearch);
       }
@@ -2005,6 +2005,36 @@ function gameTick() {
   // Update UI
   updateUI();
 }
+
+function gameTick() {
+  const now = Date.now();
+  const elapsed = lastTickTime ? (now - lastTickTime) / 1000 : 1;
+  lastTickTime = now;
+
+  // Cap catch-up to 8 hours max to avoid extreme computation
+  const dt = Math.min(Math.max(elapsed, 0), 28800);
+
+  if (dt <= 2) {
+    // Normal tick or minor throttle — single tick with dt
+    gameTickInner(dt);
+  } else {
+    // Background catch-up: simulate in 1-second chunks for accuracy
+    // but cap iterations to avoid freezing the browser
+    const chunks = Math.min(Math.floor(dt), 3600);
+    const chunkSize = dt / chunks;
+    for (let i = 0; i < chunks; i++) {
+      gameTickInner(chunkSize);
+    }
+    toast(`⚡ Caught up ${Math.round(dt / 60)} minutes of offline production!`, 'success');
+  }
+}
+
+// Catch up when tab returns from background
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && gameInterval) {
+    gameTick();
+  }
+});
 
 function startResearch(researchId) {
   const research = RESEARCH[researchId];
@@ -2166,6 +2196,7 @@ function getStats() {
 let currentPage = 'dashboard';
 let currentFloor = 0;
 let gameInterval = null;
+let lastTickTime = 0;
 let floorShowMaxRates = false;
 let codexShowLocked = false;
 let codexSearch = '';
@@ -2187,6 +2218,7 @@ function startGame(resume) {
     document.getElementById('intro-screen').style.display = 'none';
     document.getElementById('app').style.display = 'grid';
     renderCurrentPage();
+    lastTickTime = Date.now();
     gameInterval = setInterval(gameTick, 1000);
   }, 800);
 }
@@ -3986,6 +4018,7 @@ function doNewRun() {
   globalRain.colors = ['#444'];
   updateUI();
   renderCurrentPage();
+  lastTickTime = Date.now();
   gameInterval = setInterval(gameTick, 1000);
   toast('New run started!', 'success');
 }
