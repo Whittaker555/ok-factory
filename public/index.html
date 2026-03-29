@@ -69,6 +69,15 @@ body {
   width: 100vw;
 }
 
+#global-rain {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-dark); }
 ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
@@ -83,34 +92,20 @@ body {
   grid-template-columns: 220px 1fr;
   height: 100vh;
   width: 100vw;
+  position: relative;
+  z-index: 1;
 }
 
 /* TOP BAR */
 #topbar {
   grid-column: 1 / -1;
-  background: var(--bg-panel);
+  background: transparent;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   padding: 0 20px;
   gap: 24px;
   z-index: 100;
-  position: relative;
-  overflow: hidden;
-}
-
-#topbar-rain {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 0;
-}
-
-#topbar > *:not(#topbar-rain) {
-  position: relative;
-  z-index: 1;
 }
 
 #topbar .logo {
@@ -274,16 +269,10 @@ body {
   position: fixed;
   inset: 0;
   z-index: 9000;
-  background: var(--bg);
+  background: transparent;
   cursor: none;
 }
 #idle-view.active { display: block; }
-#idle-view canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
 #idle-overlay {
   position: absolute;
   inset: 0;
@@ -1173,7 +1162,7 @@ select option { background: var(--bg-raised); color: var(--text); }
 #intro-screen {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: var(--bg);
+  background: transparent;
   z-index: 9999;
   padding: 48px;
   transition: opacity 0.8s ease;
@@ -1248,9 +1237,10 @@ select option { background: var(--bg-raised); color: var(--text); }
 </head>
 <body>
 
+<canvas id="global-rain"></canvas>
+
 <!-- INTRO -->
 <div id="intro-screen">
-  <canvas id="intro-rain-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
   <div class="intro-wordmark"><span class="brand">OK FACTORY</span> — v0.1</div>
   <div class="intro-hero">
     <h1>Build.<br><em>Automate.</em><br>Dominate.</h1>
@@ -1274,7 +1264,6 @@ select option { background: var(--bg-raised); color: var(--text); }
 <div id="app" style="display:none;">
   <!-- TOP BAR -->
   <header id="topbar">
-    <canvas id="topbar-rain"></canvas>
     <div class="logo"><span class="brand">OK FACTORY</span> <span>— v0.1</span></div>
     <div class="topbar-stats">
       <div class="topbar-stat">
@@ -1379,21 +1368,21 @@ select option { background: var(--bg-raised); color: var(--text); }
     </div>
   </footer>
 
-  <!-- IDLE VIEW (fullscreen rain screensaver) -->
-  <div id="idle-view">
-    <canvas id="idle-rain-canvas"></canvas>
-    <div id="idle-overlay">
-      <div class="idle-brand">OK FACTORY</div>
-      <div class="idle-stats">
-        <div class="label">Session</div><div class="value" id="idle-session">00:00:00</div>
-        <div class="label">Efficiency</div><div class="value" id="idle-efficiency">100%</div>
-        <div class="label">Items/min</div><div class="value" id="idle-throughput">0</div>
-        <div class="label">Net Worth</div><div class="value" id="idle-networth">0</div>
-        <div class="label">Power</div><div class="value" id="idle-power">0 / 0 MW</div>
-        <div class="label">Machines</div><div class="value" id="idle-machines">0</div>
-      </div>
-      <div class="idle-exit">Click or press any key to exit</div>
+</div>
+
+<!-- IDLE VIEW (fullscreen rain screensaver) -->
+<div id="idle-view">
+  <div id="idle-overlay">
+    <div class="idle-brand">OK FACTORY</div>
+    <div class="idle-stats">
+      <div class="label">Session</div><div class="value" id="idle-session">00:00:00</div>
+      <div class="label">Efficiency</div><div class="value" id="idle-efficiency">100%</div>
+      <div class="label">Items/min</div><div class="value" id="idle-throughput">0</div>
+      <div class="label">Net Worth</div><div class="value" id="idle-networth">0</div>
+      <div class="label">Power</div><div class="value" id="idle-power">0 / 0 MW</div>
+      <div class="label">Machines</div><div class="value" id="idle-machines">0</div>
     </div>
+    <div class="idle-exit">Click or press any key to exit</div>
   </div>
 </div>
 
@@ -1736,6 +1725,9 @@ const MILESTONES = [
   { id: 'm18', name: 'Diverse Empire',        desc: 'Produce 30+ different resources', check: s => Object.keys(s.totalProduced).filter(k => s.totalProduced[k] > 0).length >= 30, reward: 'efficiency', rewardVal: 0.05 },
   { id: 'm19', name: 'Speed Demon',           desc: 'Reach 10,000 items/min total',    check: s => s.totalThroughput >= 10000, reward: 'efficiency', rewardVal: 0.05 },
   { id: 'm20', name: 'The Architect',         desc: 'Complete all research',           check: s => s.allResearchDone, reward: 'efficiency', rewardVal: 0.10 },
+  { id: 'm21', name: 'Dedicated Operator',   desc: 'Complete 10 power surges',        check: s => s.challengesSolved >= 10, reward: 'bonus_start_power', rewardVal: 50 },
+  { id: 'm22', name: 'Surge Veteran',        desc: 'Complete 25 power surges',        check: s => s.challengesSolved >= 25, reward: 'extra_floor_chance', rewardVal: 0.02 },
+  { id: 'm23', name: 'Surge Master',         desc: 'Complete 50 power surges',        check: s => s.challengesSolved >= 50, reward: 'efficiency', rewardVal: 0.04 },
 ];
 
 
@@ -1752,14 +1744,14 @@ function newGameState() {
     storage: {},           // resource_id -> quantity
     totalProduced: {},     // resource_id -> total ever produced
     floors: [
-      { name: 'Floor 1', slots: createSlots(8), unlocked: true },
-      { name: 'Floor 2', slots: createSlots(8), unlocked: true },
-      { name: 'Floor 3', slots: createSlots(10), unlocked: false },
-      { name: 'Floor 4', slots: createSlots(10), unlocked: false },
-      { name: 'Floor 5', slots: createSlots(12), unlocked: false },
-      { name: 'Floor 6', slots: createSlots(12), unlocked: false },
-      { name: 'Floor 7', slots: createSlots(14), unlocked: false },
-      { name: 'Floor 8', slots: createSlots(14), unlocked: false },
+      { name: 'Floor 1', slots: createSlots(3), rows: 1, unlocked: true },
+      { name: 'Floor 2', slots: createSlots(3), rows: 1, unlocked: true },
+      { name: 'Floor 3', slots: createSlots(3), rows: 1, unlocked: false },
+      { name: 'Floor 4', slots: createSlots(3), rows: 1, unlocked: false },
+      { name: 'Floor 5', slots: createSlots(4), rows: 1, unlocked: false },
+      { name: 'Floor 6', slots: createSlots(4), rows: 1, unlocked: false },
+      { name: 'Floor 7', slots: createSlots(5), rows: 1, unlocked: false },
+      { name: 'Floor 8', slots: createSlots(5), rows: 1, unlocked: false },
     ],
     research: {},          // research_id -> { started: bool, completed: bool, progress: 0-100 }
     unlockedRecipes: new Set([
@@ -1783,6 +1775,8 @@ function newGameState() {
     challengePowerTimer: 0,// seconds remaining for challenge bonus
     lastChallengeTime: 0,  // tick when last challenge was offered
     challengesSolved: 0,   // total challenges completed
+    extraFloorChance: 0,   // % chance of bonus floor on new run (from milestones)
+    bonusStartPower: 0,    // bonus MW on new run (from milestones)
   };
 }
 
@@ -1792,6 +1786,60 @@ function createSlots(count) {
     slots.push({ machine: null, recipe: null, active: true, clockSpeed: 1.0 });
   }
   return slots;
+}
+
+// Floor layout system: columns determined by floor tier
+function getFloorColumns(floorIdx) {
+  if (floorIdx <= 3) return 3;  // Floors 1-4
+  if (floorIdx <= 5) return 4;  // Floors 5-6
+  return 5;                      // Floors 7-8
+}
+
+const MAX_ROWS = 6;
+
+// Row cost: resource cost scales with floor tier and row number
+// Returns { resource, amount } — what it costs to buy the next row
+function getRowCost(floorIdx, nextRow) {
+  // Tier multipliers: higher floors cost more
+  const tierMult = [1, 1, 2, 2, 4, 4, 8, 8][floorIdx] || 1;
+  // Exponential row scaling
+  const base = 50 * tierMult;
+  const amount = Math.round(base * Math.pow(nextRow, 2.2));
+  // Resource progresses with floor tier
+  const resources = [
+    { id: 'iron_plate', name: 'Iron Plates' },
+    { id: 'iron_plate', name: 'Iron Plates' },
+    { id: 'steel_beam', name: 'Steel Beams' },
+    { id: 'steel_beam', name: 'Steel Beams' },
+    { id: 'circuit_board', name: 'Circuit Boards' },
+    { id: 'circuit_board', name: 'Circuit Boards' },
+    { id: 'computer', name: 'Computers' },
+    { id: 'computer', name: 'Computers' },
+  ];
+  const res = resources[floorIdx] || resources[0];
+  return { resourceId: res.id, resourceName: res.name, amount };
+}
+
+function buyRow(floorIdx) {
+  const floor = gameState.floors[floorIdx];
+  if (!floor || !floor.unlocked) return;
+  const rows = floor.rows || 1;
+  if (rows >= MAX_ROWS) { toast('Maximum rows reached!', 'warn'); return; }
+  const cost = getRowCost(floorIdx, rows + 1);
+  const have = Math.floor(gameState.storage[cost.resourceId] || 0);
+  if (have < cost.amount) {
+    toast(`Need ${formatNum(cost.amount)} ${cost.resourceName} (have ${formatNum(have)})`, 'warn');
+    return;
+  }
+  gameState.storage[cost.resourceId] -= cost.amount;
+  // Add one row's worth of new slots
+  const cols = getFloorColumns(floorIdx);
+  for (let i = 0; i < cols; i++) {
+    floor.slots.push({ machine: null, recipe: null, active: true, clockSpeed: 1.0 });
+  }
+  floor.rows = rows + 1;
+  toast(`Row ${rows + 1} added to ${floor.name}!`, 'success');
+  renderFloors();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2019,6 +2067,15 @@ function completeResearch(researchId) {
   renderCurrentPage();
 }
 
+function milestoneRewardText(m) {
+  switch (m.reward) {
+    case 'efficiency': return `+${Math.round(m.rewardVal * 100)}% efficiency`;
+    case 'extra_floor_chance': return `+${Math.round(m.rewardVal * 100)}% extra floor chance on new runs`;
+    case 'bonus_start_power': return `+${Math.round(m.rewardVal)} MW starting power on new runs`;
+    default: return `+${m.rewardVal}`;
+  }
+}
+
 function checkMilestones() {
   const stats = getStats();
   for (const milestone of MILESTONES) {
@@ -2028,8 +2085,12 @@ function checkMilestones() {
         gameState.completedMilestones.add(milestone.id);
         if (milestone.reward === 'efficiency') {
           gameState.milestoneBonus += milestone.rewardVal;
+        } else if (milestone.reward === 'extra_floor_chance') {
+          gameState.extraFloorChance += milestone.rewardVal;
+        } else if (milestone.reward === 'bonus_start_power') {
+          gameState.bonusStartPower += milestone.rewardVal;
         }
-        toast(`🏆 Milestone: ${milestone.name}! (+${Math.round(milestone.rewardVal*100)}% efficiency)`, 'success');
+        toast(`🏆 Milestone: ${milestone.name}! (${milestoneRewardText(milestone)})`, 'success');
       }
     } catch(e) {}
   }
@@ -2092,6 +2153,7 @@ function getStats() {
     totalProduced: gameState.totalProduced,
     hasBuilt: gameState.hasBuilt,
     allResearchDone,
+    challengesSolved: gameState.challengesSolved,
   };
 }
 
@@ -2226,26 +2288,27 @@ function updateUI() {
   // Update conveyor belt data
   updateConveyorData(stats);
 
+  // Update idle stats overlay if active
+  updateIdleStats();
+
   // Re-render active page periodically (every 2 ticks to avoid flicker)
   if (gameState.tick % 2 === 0) {
     renderCurrentPage();
   }
 }
 
-// ─── LIVE CONVEYOR BELT (canvas-based) ──────────────────────
+// ─── GLOBAL RAIN (single fullscreen canvas behind everything) ─────
 
-const conveyor = {
-  items: [],          // { x, y, color, speed }
-  throughput: 0,      // cached items/min
-  resourcePool: [],   // [color, color, ...] weighted by production rate
+const globalRain = {
+  items: [],
   lastFrame: 0,
-  lastSpawn: 0,       // timestamp of last spawn
-  efficiency: 1,      // 0-2 from computeEfficiency(), scales rain speed
+  lastSpawn: 0,
+  throughput: 150,   // default: gentle rain for new visitors
+  efficiency: 2,     // 2 → effMult=1.0 (full speed) for intro preview
+  colors: ['#f59e0b','#3b82f6','#ef4444','#10b981','#8b5cf6','#ec4899','#06b6d4','#84cc16'],
 };
 
 function updateConveyorData(stats) {
-  conveyor.throughput = stats.totalThroughput || 0;
-  conveyor.efficiency = stats.efficiency || 1;
   // Build weighted color pool from what's being produced
   const pool = [];
   const allRecipes = getAllRecipes();
@@ -2266,119 +2329,15 @@ function updateConveyorData(stats) {
       }
     }
   }
-  conveyor.resourcePool = pool.length > 0 ? pool : ['#444'];
+  // Feed global rain with live game data
+  globalRain.throughput = stats.totalThroughput || 0;
+  globalRain.efficiency = stats.efficiency || 0;
+  globalRain.colors = pool.length > 0 ? pool : ['#444'];
 }
 
-function animateRain(now) {
-  requestAnimationFrame(animateRain);
-  const canvas = document.getElementById('topbar-rain');
-  if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
-  if (rect.width === 0 || rect.height === 0) return;
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const targetW = Math.round(rect.width * dpr);
-  const targetH = Math.round(rect.height * dpr);
-  if (canvas.width !== targetW || canvas.height !== targetH) {
-    canvas.width = targetW;
-    canvas.height = targetH;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  const W = rect.width;
-  const H = rect.height;
-  const dt = conveyor.lastFrame ? (now - conveyor.lastFrame) / 1000 : 0;
-  conveyor.lastFrame = now;
-  ctx.clearRect(0, 0, W, H);
-
-  if (conveyor.throughput < 0.1) return;
-
-  // ── Spawn: log-scale density, steep power curve ──
-  const logT = conveyor.throughput > 0 ? Math.log10(conveyor.throughput) : 0;
-  const visualIPM = Math.min(120000, 50 * Math.pow(logT, 2.5));
-  const interval = 60000 / Math.max(1, visualIPM);
-  const eff = conveyor.efficiency; // 0-2, from power/milestones
-  // 100% eff (1.0) → 0.5× speed, 200% eff (2.0) → 1× speed (full)
-  const effMult = eff * 0.5;
-  const speedBase = Math.min(600, 20 + logT * logT * 8) * effMult;
-  const speedRange = speedBase * 0.4;
-  if (!conveyor.lastSpawn) conveyor.lastSpawn = now;
-  let spawned = 0;
-  while (now - conveyor.lastSpawn >= interval && spawned < 200) {
-    conveyor.lastSpawn += interval;
-    spawned++;
-    const color = conveyor.resourcePool[Math.floor(Math.random() * conveyor.resourcePool.length)];
-    const speed = speedBase + Math.random() * speedRange;
-    conveyor.items.push({ x: 4 + Math.random() * (W - 8), y: -10, color, speed });
-  }
-  if (now - conveyor.lastSpawn >= interval * 200) conveyor.lastSpawn = now;
-
-  // ── Move & draw falling items ──
-  const sz = Math.min(18, 6 + logT * 1.5);
-  const r = sz / 4;
-  const alpha = Math.min(1, 0.15 + logT * 0.1);
-  for (let i = conveyor.items.length - 1; i >= 0; i--) {
-    const item = conveyor.items[i];
-    item.y += item.speed * dt;
-    if (item.y > H + 12) { conveyor.items.splice(i, 1); continue; }
-
-    const ix = item.x - sz / 2;
-    const iy = item.y - sz / 2;
-
-    ctx.beginPath();
-    ctx.moveTo(ix + r, iy);
-    ctx.lineTo(ix + sz - r, iy);
-    ctx.quadraticCurveTo(ix + sz, iy, ix + sz, iy + r);
-    ctx.lineTo(ix + sz, iy + sz - r);
-    ctx.quadraticCurveTo(ix + sz, iy + sz, ix + sz - r, iy + sz);
-    ctx.lineTo(ix + r, iy + sz);
-    ctx.quadraticCurveTo(ix, iy + sz, ix, iy + sz - r);
-    ctx.lineTo(ix, iy + r);
-    ctx.quadraticCurveTo(ix, iy, ix + r, iy);
-    ctx.closePath();
-    ctx.fillStyle = item.color;
-    ctx.globalAlpha = alpha;
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-}
-
-// Start the animation loop once
-requestAnimationFrame(animateRain);
-
-// ─── IDLE VIEW (fullscreen rain screensaver) ─────────────────
-let idleActive = false;
-const idleRainState = { items: [], lastFrame: 0, lastSpawn: 0 };
-
-function toggleIdleView() {
-  if (idleActive) exitIdleView();
-  else enterIdleView();
-}
-
-function enterIdleView() {
-  idleActive = true;
-  idleRainState.items = [];
-  idleRainState.lastFrame = 0;
-  idleRainState.lastSpawn = 0;
-  document.getElementById('idle-view').classList.add('active');
-  requestAnimationFrame(animateIdleRain);
-}
-
-function exitIdleView() {
-  idleActive = false;
-  document.getElementById('idle-view').classList.remove('active');
-}
-
-// Close on click or keypress
-document.getElementById('idle-view').addEventListener('click', exitIdleView);
-document.addEventListener('keydown', (e) => {
-  if (idleActive && e.key !== 'F11') exitIdleView();
-});
-
-function animateIdleRain(now) {
-  if (!idleActive) return;
-  requestAnimationFrame(animateIdleRain);
-
-  const canvas = document.getElementById('idle-rain-canvas');
+function animateGlobalRain(now) {
+  requestAnimationFrame(animateGlobalRain);
+  const canvas = document.getElementById('global-rain');
   if (!canvas) return;
   const rect = canvas.getBoundingClientRect();
   if (rect.width === 0 || rect.height === 0) return;
@@ -2393,41 +2352,42 @@ function animateIdleRain(now) {
   }
   const W = rect.width;
   const H = rect.height;
-  const dt = idleRainState.lastFrame ? (now - idleRainState.lastFrame) / 1000 : 0;
-  idleRainState.lastFrame = now;
+  const dt = globalRain.lastFrame ? (now - globalRain.lastFrame) / 1000 : 0;
+  globalRain.lastFrame = now;
   ctx.clearRect(0, 0, W, H);
 
-  const tp = conveyor.throughput;
+  const tp = globalRain.throughput;
   if (tp < 0.1) return;
 
-  const pool = conveyor.resourcePool.length > 0 ? conveyor.resourcePool : ['#444'];
   const logT = Math.log10(tp);
   const visualIPM = Math.min(120000, 50 * Math.pow(logT, 2.5));
   const interval = 60000 / Math.max(1, visualIPM);
-  const eff = conveyor.efficiency;
+  const eff = globalRain.efficiency; // 0-2
   const effMult = eff * 0.5;
+  if (effMult < 0.001) return; // no power → no rain
   const speedBase = Math.min(600, 20 + logT * logT * 8) * effMult;
   const speedRange = speedBase * 0.4;
+  const pool = globalRain.colors;
 
-  if (!idleRainState.lastSpawn) idleRainState.lastSpawn = now;
+  if (!globalRain.lastSpawn) globalRain.lastSpawn = now;
   let spawned = 0;
-  while (now - idleRainState.lastSpawn >= interval && spawned < 200) {
-    idleRainState.lastSpawn += interval;
+  while (now - globalRain.lastSpawn >= interval && spawned < 200) {
+    globalRain.lastSpawn += interval;
     spawned++;
     const color = pool[Math.floor(Math.random() * pool.length)];
     const speed = speedBase + Math.random() * speedRange;
-    idleRainState.items.push({ x: Math.random() * W, y: -14, color, speed });
+    globalRain.items.push({ x: Math.random() * W, y: -14, color, speed });
   }
-  if (now - idleRainState.lastSpawn >= interval * 200) idleRainState.lastSpawn = now;
+  if (now - globalRain.lastSpawn >= interval * 200) globalRain.lastSpawn = now;
 
   const sz = Math.min(18, 6 + logT * 1.5);
   const r = sz / 4;
   const alpha = Math.min(1, 0.15 + logT * 0.1);
 
-  for (let i = idleRainState.items.length - 1; i >= 0; i--) {
-    const item = idleRainState.items[i];
+  for (let i = globalRain.items.length - 1; i >= 0; i--) {
+    const item = globalRain.items[i];
     item.y += item.speed * dt;
-    if (item.y > H + 14) { idleRainState.items.splice(i, 1); continue; }
+    if (item.y > H + 14) { globalRain.items.splice(i, 1); continue; }
     const ix = item.x - sz / 2, iy = item.y - sz / 2;
     ctx.beginPath();
     ctx.moveTo(ix + r, iy);
@@ -2445,13 +2405,39 @@ function animateIdleRain(now) {
     ctx.fill();
     ctx.globalAlpha = 1;
   }
-
-  // Update idle stats overlay
-  updateIdleStats();
 }
 
+// Start global rain animation loop
+requestAnimationFrame(animateGlobalRain);
+
+// ─── IDLE VIEW (fullscreen overlay, rain continues behind) ───
+let idleActive = false;
+
+function toggleIdleView() {
+  if (idleActive) exitIdleView();
+  else enterIdleView();
+}
+
+function enterIdleView() {
+  idleActive = true;
+  document.getElementById('app').style.visibility = 'hidden';
+  document.getElementById('idle-view').classList.add('active');
+}
+
+function exitIdleView() {
+  idleActive = false;
+  document.getElementById('idle-view').classList.remove('active');
+  document.getElementById('app').style.visibility = '';
+}
+
+// Close on click or keypress
+document.getElementById('idle-view').addEventListener('click', exitIdleView);
+document.addEventListener('keydown', (e) => {
+  if (idleActive && e.key !== 'F11') exitIdleView();
+});
+
 function updateIdleStats() {
-  if (!gameState) return;
+  if (!gameState || !idleActive) return;
   const stats = getStats();
   const elapsed = Date.now() - gameState.startTime;
   const h = String(Math.floor(elapsed / 3600000)).padStart(2,'0');
@@ -2739,6 +2725,34 @@ function renderFloors() {
     `;
   }).join('');
 
+  // Buy row button
+  const floorRows = floor.rows || 1;
+  let buyRowHtml = '';
+  if (floorRows < MAX_ROWS) {
+    const cost = getRowCost(currentFloor, floorRows + 1);
+    const have = Math.floor(gameState.storage[cost.resourceId] || 0);
+    const canAfford = have >= cost.amount;
+    buyRowHtml = `
+      <div style="margin-top:12px;display:flex;align-items:center;gap:12px;">
+        <button class="btn ${canAfford ? 'btn-primary' : ''}" onclick="buyRow(${currentFloor})" ${canAfford ? '' : 'disabled style="opacity:0.4;"'}>
+          + Buy Row ${floorRows + 1}
+        </button>
+        <span style="font-family:var(--font-mono);font-size:11px;color:${canAfford ? 'var(--green)' : 'var(--text-dim)'};">
+          Cost: ${formatNum(cost.amount)} ${cost.resourceName} (have ${formatNum(have)})
+        </span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);">
+          ${floorRows}/${MAX_ROWS} rows · ${getFloorColumns(currentFloor)} cols
+        </span>
+      </div>
+    `;
+  } else {
+    buyRowHtml = `
+      <div style="margin-top:12px;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);">
+        ${MAX_ROWS}/${MAX_ROWS} rows · ${getFloorColumns(currentFloor)} cols — fully expanded
+      </div>
+    `;
+  }
+
   page.innerHTML = `
     <div class="page-title">FACTORY FLOORS</div>
     <div class="page-subtitle">CONFIGURE PRODUCTION LINES</div>
@@ -2748,7 +2762,8 @@ function renderFloors() {
         ${showMax ? '📐 100% Rates' : '📊 Current Rates'}
       </button>
     </div>
-    <div class="grid-4">${slotsHtml}</div>
+    <div style="display:grid;grid-template-columns:repeat(${getFloorColumns(currentFloor)}, 1fr);gap:12px;">${slotsHtml}</div>
+    ${buyRowHtml}
   `;
 }
 
@@ -3288,37 +3303,50 @@ function renderCodex() {
 function renderMilestones() {
   const page = document.getElementById('page-milestones');
   const stats = getStats();
+  const achieved = MILESTONES.filter(m => gameState.completedMilestones.has(m.id));
+
+  // Build summary lines for non-zero reward totals
+  const summaryParts = [];
+  if (gameState.milestoneBonus > 0) summaryParts.push(`+${Math.round(gameState.milestoneBonus * 100)}% efficiency`);
+  if (gameState.extraFloorChance > 0) summaryParts.push(`+${Math.round(gameState.extraFloorChance * 100)}% extra floor chance`);
+  if (gameState.bonusStartPower > 0) summaryParts.push(`+${Math.round(gameState.bonusStartPower)} MW starting power`);
 
   let html = `
     <div class="page-title">MILESTONES</div>
-    <div class="page-subtitle">ACHIEVEMENTS & BONUSES — ${gameState.completedMilestones.size}/${MILESTONES.length}</div>
+    <div class="page-subtitle">ACHIEVEMENTS & BONUSES — ${achieved.length} ACHIEVED</div>
     <div class="card" style="margin-bottom:16px;">
-      <div class="card-title" style="color:var(--amber);">TOTAL MILESTONE BONUS: +${Math.round(gameState.milestoneBonus * 100)}% EFFICIENCY</div>
+      <div class="card-title" style="color:var(--amber);">MILESTONE REWARDS</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">
+        ${summaryParts.length > 0 ? summaryParts.join(' · ') : 'None yet — keep playing!'}
+      </div>
     </div>
-    <div class="grid-3">
   `;
 
-  for (const m of MILESTONES) {
-    const done = gameState.completedMilestones.has(m.id);
-    html += `
-      <div class="card" style="${done ? 'border-color:var(--green-dim);' : ''}">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-          <div>
-            <div style="font-family:var(--font-display);font-size:12px;color:${done ? 'var(--green)' : 'var(--text-bright)'};font-weight:700;margin-bottom:4px;">
-              ${done ? '🏆 ' : ''}${escapeHtml(m.name)}
+  if (achieved.length > 0) {
+    html += '<div class="grid-3">';
+    for (const m of achieved) {
+      html += `
+        <div class="card" style="border-color:var(--green-dim);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <div style="font-family:var(--font-display);font-size:12px;color:var(--green);font-weight:700;margin-bottom:4px;">
+                🏆 ${escapeHtml(m.name)}
+              </div>
+              <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">${escapeHtml(m.desc)}</div>
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--amber);">
+                Reward: ${milestoneRewardText(m)}
+              </div>
             </div>
-            <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">${escapeHtml(m.desc)}</div>
-            <div style="font-family:var(--font-mono);font-size:10px;color:var(--amber);">
-              Reward: +${Math.round(m.rewardVal * 100)}% efficiency
-            </div>
+            <span style="color:var(--green);font-size:20px;">✓</span>
           </div>
-          ${done ? '<span style="color:var(--green);font-size:20px;">✓</span>' : ''}
         </div>
-      </div>
-    `;
+      `;
+    }
+    html += '</div>';
+  } else {
+    html += '<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-dim);text-align:center;padding:32px;">No milestones achieved yet. Keep building!</div>';
   }
 
-  html += '</div>';
   page.innerHTML = html;
 }
 
@@ -3775,6 +3803,16 @@ function deserializeState(obj) {
   for (const key of Object.keys(defaults)) {
     if (!(key in obj)) obj[key] = defaults[key];
   }
+  // Migrate floors: add rows field if missing
+  if (obj.floors) {
+    for (let i = 0; i < obj.floors.length; i++) {
+      const floor = obj.floors[i];
+      if (floor.rows === undefined) {
+        const cols = getFloorColumns(i);
+        floor.rows = Math.max(1, Math.ceil(floor.slots.length / cols));
+      }
+    }
+  }
   return obj;
 }
 
@@ -3904,14 +3942,41 @@ function confirmNewRun() {
 }
 
 function doNewRun() {
+  // Preserve milestone achievements across runs
+  const prevMilestones = [...gameState.completedMilestones];
+  const prevMilestoneBonus = gameState.milestoneBonus;
+  const prevExtraFloorChance = gameState.extraFloorChance || 0;
+  const prevBonusStartPower = gameState.bonusStartPower || 0;
+
   localStorage.removeItem(SAVE_KEY);
   if (gameInterval) clearInterval(gameInterval);
   closeModal();
   gameState = newGameState();
-  conveyor.items = [];
-  conveyor.lastSpawn = 0;
-  conveyor.throughput = 0;
-  conveyor.resourcePool = ['#444'];
+
+  // Restore milestone state
+  gameState.completedMilestones = new Set(prevMilestones);
+  gameState.milestoneBonus = prevMilestoneBonus;
+  gameState.extraFloorChance = prevExtraFloorChance;
+  gameState.bonusStartPower = prevBonusStartPower;
+
+  // Apply extra floor chance reward
+  if (prevExtraFloorChance > 0 && Math.random() < prevExtraFloorChance) {
+    const locked = gameState.floors.findIndex(f => !f.unlocked);
+    if (locked >= 0) {
+      gameState.floors[locked].unlocked = true;
+      toast('🎲 Milestone bonus: Extra floor unlocked!', 'success');
+    }
+  }
+  // Apply bonus starting power reward
+  if (prevBonusStartPower > 0) {
+    gameState.manualPower = Math.min(prevBonusStartPower, gameState.manualPowerMax);
+    toast(`⚡ Milestone bonus: +${Math.round(prevBonusStartPower)} MW starting power!`, 'success');
+  }
+
+  globalRain.items = [];
+  globalRain.lastSpawn = 0;
+  globalRain.throughput = 0;
+  globalRain.colors = ['#444'];
   updateUI();
   renderCurrentPage();
   gameInterval = setInterval(gameTick, 1000);
@@ -3937,17 +4002,8 @@ window.addEventListener('beforeunload', (e) => {
   }
 });
 
-// ─── INTRO RAIN ANIMATION ────────────────────────────────────
-(function initIntroRain() {
-  const introRain = {
-    items: [],
-    lastFrame: 0,
-    lastSpawn: 0,
-    throughput: 150, // default: gentle rain for new visitors
-    colors: ['#f59e0b','#3b82f6','#ef4444','#10b981','#8b5cf6','#ec4899','#06b6d4','#84cc16'],
-  };
-
-  // If there's a save, compute throughput and colors from actual production
+// ─── INIT GLOBAL RAIN FROM SAVE ──────────────────────────────
+(function initGlobalRainFromSave() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) {
@@ -3955,11 +4011,24 @@ window.addEventListener('beforeunload', (e) => {
       if (save.state && save.state.floors) {
         let tp = 0;
         const pool = [];
+        let generatorSupply = 0;
+        let demand = 0;
         const allR = Object.assign({}, RECIPES, ALT_RECIPES || {});
         for (const floor of save.state.floors) {
           if (!floor.unlocked) continue;
           for (const slot of floor.slots) {
-            if (!slot.machine || !slot.recipe) continue;
+            if (!slot.machine) continue;
+            const machine = MACHINES[slot.machine];
+            const cs = slot.clockSpeed || 1;
+            if (machine && slot.active !== false) {
+              if (machine.power < 0) {
+                if (slot.recipe) generatorSupply += Math.abs(machine.power) * cs;
+              } else if (machine.power > 0) {
+                const pm = cs > 1 ? cs * cs : cs;
+                demand += machine.power * pm;
+              }
+            }
+            if (!slot.recipe) continue;
             const recipe = allR[slot.recipe];
             if (!recipe) continue;
             for (const [res, amount] of Object.entries(recipe.outputs)) {
@@ -3971,77 +4040,18 @@ window.addEventListener('beforeunload', (e) => {
             }
           }
         }
-        if (tp > 0) introRain.throughput = tp;
-        if (pool.length > 0) introRain.colors = pool;
+        if (tp > 0) globalRain.throughput = tp;
+        if (pool.length > 0) globalRain.colors = pool;
+        // Compute efficiency from power state
+        const manualAvail = (save.state.manualPower || 0) + (save.state.challengePower || 0);
+        const deficit = Math.max(0, demand - generatorSupply);
+        const supply = generatorSupply + Math.min(manualAvail, deficit);
+        const powerEff = demand > 0 ? Math.min(1, supply / demand) : 1;
+        const milestoneBonus = save.state.milestoneBonus || 0;
+        globalRain.efficiency = Math.min(2, powerEff * (1 + milestoneBonus));
       }
     }
-  } catch(e) { /* ignore parse errors */ }
-
-  function animateIntroRain(now) {
-    const introEl = document.getElementById('intro-screen');
-    if (!introEl || introEl.classList.contains('fade-out')) return;
-    requestAnimationFrame(animateIntroRain);
-    const canvas = document.getElementById('intro-rain-canvas');
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return;
-    const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    const targetW = Math.round(rect.width * dpr);
-    const targetH = Math.round(rect.height * dpr);
-    if (canvas.width !== targetW || canvas.height !== targetH) {
-      canvas.width = targetW;
-      canvas.height = targetH;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    const W = rect.width, H = rect.height;
-    const dt = introRain.lastFrame ? (now - introRain.lastFrame) / 1000 : 0;
-    introRain.lastFrame = now;
-    ctx.clearRect(0, 0, W, H);
-
-    // Spawn: log-scale density, steep power curve
-    const logT = introRain.throughput > 0 ? Math.log10(introRain.throughput) : 0;
-    const visualIPM = Math.min(120000, 50 * Math.pow(logT, 2.5));
-    const interval = 60000 / Math.max(1, visualIPM);
-    const speedBase = Math.min(600, 20 + logT * logT * 8);
-    const speedRange = speedBase * 0.4;
-    if (!introRain.lastSpawn) introRain.lastSpawn = now;
-    let spawned = 0;
-    while (now - introRain.lastSpawn >= interval && spawned < 200) {
-      introRain.lastSpawn += interval;
-      spawned++;
-      const color = introRain.colors[Math.floor(Math.random() * introRain.colors.length)];
-      const speed = speedBase + Math.random() * speedRange;
-      introRain.items.push({ x: Math.random() * W, y: -10, color, speed });
-    }
-    if (now - introRain.lastSpawn >= interval * 200) introRain.lastSpawn = now;
-
-    // Move & draw
-    const sz = Math.min(18, 6 + logT * 1.5), r = sz / 4;
-    const alpha = Math.min(1, 0.15 + logT * 0.1);
-    for (let i = introRain.items.length - 1; i >= 0; i--) {
-      const item = introRain.items[i];
-      item.y += item.speed * dt;
-      if (item.y > H + 12) { introRain.items.splice(i, 1); continue; }
-      const ix = item.x - sz / 2, iy = item.y - sz / 2;
-      ctx.beginPath();
-      ctx.moveTo(ix + r, iy);
-      ctx.lineTo(ix + sz - r, iy);
-      ctx.quadraticCurveTo(ix + sz, iy, ix + sz, iy + r);
-      ctx.lineTo(ix + sz, iy + sz - r);
-      ctx.quadraticCurveTo(ix + sz, iy + sz, ix + sz - r, iy + sz);
-      ctx.lineTo(ix + r, iy + sz);
-      ctx.quadraticCurveTo(ix, iy + sz, ix, iy + sz - r);
-      ctx.lineTo(ix, iy + r);
-      ctx.quadraticCurveTo(ix, iy, ix + r, iy);
-      ctx.closePath();
-      ctx.fillStyle = item.color;
-      ctx.globalAlpha = alpha;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-  }
-  requestAnimationFrame(animateIntroRain);
+  } catch (e) { /* ignore parse errors */ }
 })();
 
 // On load: check for existing save and show continue button

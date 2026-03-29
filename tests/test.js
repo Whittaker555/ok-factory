@@ -58,15 +58,22 @@ global.localStorage = (() => {
   };
 })();
 global.crypto = { randomUUID: () => 'test-uuid-1234' };
-const mockEl = () => ({
-  style: {}, textContent: '', innerHTML: '', className: '', value: '',
-  classList: { add(){}, remove(){}, toggle(){}, contains(){ return false; } },
-  appendChild(){}, removeChild(){}, insertBefore(){},
-  addEventListener(){}, removeEventListener(){},
-  setAttribute(){}, getAttribute(){ return ''; },
-  querySelectorAll(){ return []; }, querySelector(){ return null; },
-  children: [], childNodes: [],
-});
+const mockEl = () => {
+  let _tc = '', _ih = '';
+  return {
+    style: {}, className: '', value: '',
+    get textContent() { return _tc; },
+    set textContent(v) { _tc = v; _ih = String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); },
+    get innerHTML() { return _ih; },
+    set innerHTML(v) { _ih = v; },
+    classList: { add(){}, remove(){}, toggle(){}, contains(){ return false; } },
+    appendChild(){}, removeChild(){}, insertBefore(){},
+    addEventListener(){}, removeEventListener(){},
+    setAttribute(){}, getAttribute(){ return ''; },
+    querySelectorAll(){ return []; }, querySelector(){ return null; },
+    children: [], childNodes: [],
+  };
+};
 global.document = {
   getElementById: () => mockEl(),
   querySelector:  () => mockEl(),
@@ -110,6 +117,7 @@ const wrapped = `
     serializeState, deserializeState,
     autoSave, loadFromStorage,
     startResearch, completeResearch, checkMilestones,
+    renderMilestones, doNewRun,
     get gameState()  { return gameState; },
     set gameState(v) { gameState = v; },
   };
@@ -338,9 +346,16 @@ T.group('MILESTONES — integrity', () => {
     assert.strictEqual(ids.length, new Set(ids).size, 'duplicate milestone IDs');
   });
 
-  T.test('rewardVal in (0, 0.10]', () => {
-    for (const m of G.MILESTONES)
-      assert(m.rewardVal > 0 && m.rewardVal <= 0.10, `${m.id}: bad rewardVal ${m.rewardVal}`);
+  T.test('rewardVal ranges valid per reward type', () => {
+    for (const m of G.MILESTONES) {
+      if (m.reward === 'efficiency' || m.reward === 'extra_floor_chance') {
+        assert(m.rewardVal > 0 && m.rewardVal <= 0.10, `${m.id}: bad rewardVal ${m.rewardVal}`);
+      } else if (m.reward === 'bonus_start_power') {
+        assert(m.rewardVal > 0 && m.rewardVal <= 200, `${m.id}: bad rewardVal ${m.rewardVal}`);
+      } else {
+        assert(false, `${m.id}: unknown reward type '${m.reward}'`);
+      }
+    }
   });
 
   T.test('check functions are callable against mock stats', () => {
@@ -350,6 +365,7 @@ T.group('MILESTONES — integrity', () => {
         quantum_oscillator: 1, singularity_cell: 1 },
       totalMachines: 50, activeFloors: 8, netWorth: 2e9, powerSupply: 10000,
       totalThroughput: 50000, hasBuilt: { nuclear_plant: true }, allResearchDone: true,
+      challengesSolved: 100,
     };
     for (const m of G.MILESTONES) {
       const result = m.check(mock);
@@ -373,10 +389,15 @@ T.group('newGameState() — initial values', () => {
     for (let i = 2; i < 8; i++) assert(!s.floors[i].unlocked, `floor ${i+1} should be locked`);
   });
 
-  T.test('slot counts: 8,8,10,10,12,12,14,14', () => {
+  T.test('slot counts: 1 row each (3,3,3,3,4,4,5,5)', () => {
     const s = freshState();
-    const expected = [8,8,10,10,12,12,14,14];
+    const expected = [3,3,3,3,4,4,5,5];
     s.floors.forEach((f,i) => assert.strictEqual(f.slots.length, expected[i], `floor ${i+1}`));
+  });
+
+  T.test('floors start with 1 row each', () => {
+    const s = freshState();
+    s.floors.forEach((f,i) => assert.strictEqual(f.rows, 1, `floor ${i+1} rows`));
   });
 
   T.test('default unlocked machines: miner_mk1, smelter, constructor', () => {
@@ -398,6 +419,12 @@ T.group('newGameState() — initial values', () => {
     assert.strictEqual(s.manualPower, 0);
     assert.strictEqual(s.challengePower, 0);
     assert.strictEqual(s.challengesSolved, 0);
+  });
+
+  T.test('milestone reward accumulators start at 0', () => {
+    const s = freshState();
+    assert.strictEqual(s.extraFloorChance, 0);
+    assert.strictEqual(s.bonusStartPower, 0);
   });
 });
 
@@ -887,6 +914,207 @@ T.group('Edge cases', () => {
     s.floors[0].slots[0].machine = 'nuclear_plant';
     s.floors[0].slots[0].recipe  = 'burn_uranium';
     assert.strictEqual(G.computePower().supply, 2500);
+  });
+});
+
+// ─── MILESTONES — hidden until achieved ──────────────────────
+
+T.group('MILESTONES — hidden until achieved', () => {
+  T.test('renderMilestones only shows completed milestone names', () => {
+    const s = freshState();
+    s.completedMilestones.add('m1');
+    const el = { innerHTML: '' };
+    const orig = global.document.getElementById;
+    global.document.getElementById = (id) => id === 'page-milestones' ? el : orig(id);
+    G.renderMilestones();
+    global.document.getElementById = orig;
+    assert(el.innerHTML.includes('First Steps'), 'completed milestone should be visible');
+    assert(!el.innerHTML.includes('Copper Baron'), 'uncompleted milestone should be hidden');
+    assert(!el.innerHTML.includes('Steel Worker'), 'uncompleted milestone should be hidden');
+  });
+
+  T.test('milestone page shows completed count without total', () => {
+    const s = freshState();
+    s.completedMilestones.add('m1');
+    s.completedMilestones.add('m2');
+    const el = { innerHTML: '' };
+    const orig = global.document.getElementById;
+    global.document.getElementById = (id) => id === 'page-milestones' ? el : orig(id);
+    G.renderMilestones();
+    global.document.getElementById = orig;
+    // Should show count of achieved milestones
+    assert(el.innerHTML.includes('2'), 'should show completed count');
+    // Should NOT reveal total count (spoiler)
+    assert(!el.innerHTML.includes(`/${G.MILESTONES.length}`), 'should not show total milestone count');
+  });
+
+  T.test('milestone page still shows total efficiency bonus', () => {
+    const s = freshState();
+    s.completedMilestones.add('m1');
+    s.milestoneBonus = 0.02;
+    const el = { innerHTML: '' };
+    const orig = global.document.getElementById;
+    global.document.getElementById = (id) => id === 'page-milestones' ? el : orig(id);
+    G.renderMilestones();
+    global.document.getElementById = orig;
+    assert(el.innerHTML.includes('2%'), 'should show total efficiency bonus');
+  });
+});
+
+// ─── MILESTONES — new reward types & power surge ─────────────
+
+T.group('MILESTONES — new reward types & power surge triggers', () => {
+  T.test('milestone exists for 10 power surges (bonus_start_power)', () => {
+    const m = G.MILESTONES.find(m => m.reward === 'bonus_start_power');
+    assert(m, 'should have a bonus_start_power milestone');
+    const mock = { challengesSolved: 10, totalProduced: {}, totalMachines: 0,
+      activeFloors: 0, netWorth: 0, powerSupply: 0, totalThroughput: 0,
+      hasBuilt: {}, allResearchDone: false };
+    assert(m.check(mock), 'should trigger at 10 surges');
+    mock.challengesSolved = 9;
+    assert(!m.check(mock), 'should not trigger below 10');
+  });
+
+  T.test('milestone exists for 25 power surges (extra_floor_chance)', () => {
+    const m = G.MILESTONES.find(m => m.reward === 'extra_floor_chance');
+    assert(m, 'should have an extra_floor_chance milestone');
+    const mock = { challengesSolved: 25, totalProduced: {}, totalMachines: 0,
+      activeFloors: 0, netWorth: 0, powerSupply: 0, totalThroughput: 0,
+      hasBuilt: {}, allResearchDone: false };
+    assert(m.check(mock), 'should trigger at 25 surges');
+    mock.challengesSolved = 24;
+    assert(!m.check(mock), 'should not trigger below 25');
+  });
+
+  T.test('milestone exists for 50 power surges (efficiency)', () => {
+    const surgeEfficiency = G.MILESTONES.find(m =>
+      m.reward === 'efficiency' && m.check({ challengesSolved: 50, totalProduced: {},
+        totalMachines: 0, activeFloors: 0, netWorth: 0, powerSupply: 0,
+        totalThroughput: 0, hasBuilt: {}, allResearchDone: false }));
+    assert(surgeEfficiency, 'should have a surge-based efficiency milestone');
+  });
+
+  T.test('checkMilestones awards extra_floor_chance reward', () => {
+    const s = freshState();
+    s.challengesSolved = 25;
+    G.checkMilestones();
+    const m = G.MILESTONES.find(m => m.reward === 'extra_floor_chance');
+    assert(s.completedMilestones.has(m.id), 'milestone should be completed');
+    assert.strictEqual(s.extraFloorChance, m.rewardVal, 'extraFloorChance should increase');
+  });
+
+  T.test('checkMilestones awards bonus_start_power reward', () => {
+    const s = freshState();
+    s.challengesSolved = 10;
+    G.checkMilestones();
+    const m = G.MILESTONES.find(m => m.reward === 'bonus_start_power');
+    assert(s.completedMilestones.has(m.id), 'milestone should be completed');
+    assert.strictEqual(s.bonusStartPower, m.rewardVal, 'bonusStartPower should increase');
+  });
+
+  T.test('reward type text shown for non-efficiency milestones', () => {
+    const s = freshState();
+    s.challengesSolved = 25;
+    G.checkMilestones();
+    const el = { innerHTML: '' };
+    const orig = global.document.getElementById;
+    global.document.getElementById = (id) => id === 'page-milestones' ? el : orig(id);
+    G.renderMilestones();
+    global.document.getElementById = orig;
+    assert(el.innerHTML.includes('extra floor'), 'should show extra floor reward text');
+  });
+});
+
+// ─── New run — milestone reward carry-forward ────────────────
+
+T.group('New run — milestone reward carry-forward', () => {
+  T.test('doNewRun preserves completed milestones', () => {
+    const s = freshState();
+    s.completedMilestones.add('m1');
+    s.milestoneBonus = 0.02;
+    G.doNewRun();
+    assert(G.gameState.completedMilestones.has('m1'), 'milestone should persist');
+    assert.strictEqual(G.gameState.milestoneBonus, 0.02, 'bonus should persist');
+  });
+
+  T.test('extra floor chance: random below threshold unlocks floor 3', () => {
+    const s = freshState();
+    s.extraFloorChance = 0.02;
+    s.completedMilestones.add('m1'); // need at least one milestone
+    const origRandom = Math.random;
+    Math.random = () => 0.01; // below 0.02 threshold
+    G.doNewRun();
+    Math.random = origRandom;
+    // Floor 3 (index 2) should be unlocked as bonus
+    assert(G.gameState.floors[2].unlocked, 'extra floor should be unlocked');
+  });
+
+  T.test('extra floor chance: random above threshold does not unlock', () => {
+    const s = freshState();
+    s.extraFloorChance = 0.02;
+    s.completedMilestones.add('m1');
+    const origRandom = Math.random;
+    Math.random = () => 0.99; // above 0.02 threshold
+    G.doNewRun();
+    Math.random = origRandom;
+    assert(!G.gameState.floors[2].unlocked, 'extra floor should NOT be unlocked');
+  });
+
+  T.test('bonus start power applied on new run', () => {
+    const s = freshState();
+    s.bonusStartPower = 50;
+    s.completedMilestones.add('m1');
+    G.doNewRun();
+    assert.strictEqual(G.gameState.manualPower, 50, 'should start with bonus power');
+  });
+
+  T.test('bonus start power capped at manualPowerMax', () => {
+    const s = freshState();
+    s.bonusStartPower = 999;
+    G.doNewRun();
+    assert(G.gameState.manualPower <= G.gameState.manualPowerMax, 'should not exceed cap');
+  });
+
+  T.test('new run resets production but keeps milestones', () => {
+    const s = freshState();
+    s.completedMilestones.add('m1');
+    s.completedMilestones.add('m2');
+    s.milestoneBonus = 0.04;
+    s.storage = { iron_ore: 999 };
+    s.tick = 500;
+    G.doNewRun();
+    // Milestones preserved
+    assert(G.gameState.completedMilestones.has('m1'));
+    assert(G.gameState.completedMilestones.has('m2'));
+    assert.strictEqual(G.gameState.milestoneBonus, 0.04);
+    // Production reset
+    assert.strictEqual(G.gameState.tick, 0);
+    assert.deepStrictEqual(G.gameState.storage, {});
+  });
+});
+
+// ─── Serialization — new fields ──────────────────────────────
+
+T.group('Save/Load — new milestone reward fields', () => {
+  T.test('round-trip preserves extraFloorChance', () => {
+    const s = freshState();
+    s.extraFloorChance = 0.02;
+    const back = G.deserializeState(G.serializeState(s));
+    assert.strictEqual(back.extraFloorChance, 0.02);
+  });
+
+  T.test('round-trip preserves bonusStartPower', () => {
+    const s = freshState();
+    s.bonusStartPower = 50;
+    const back = G.deserializeState(G.serializeState(s));
+    assert.strictEqual(back.bonusStartPower, 50);
+  });
+
+  T.test('old saves without new fields get defaults', () => {
+    const partial = { tick: 5, storage: {}, unlockedRecipes: [], unlockedMachines: [], completedMilestones: [] };
+    const back = G.deserializeState(partial);
+    assert.strictEqual(back.extraFloorChance, 0, 'extraFloorChance defaults to 0');
+    assert.strictEqual(back.bonusStartPower, 0, 'bonusStartPower defaults to 0');
   });
 });
 
