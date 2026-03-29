@@ -1703,15 +1703,39 @@ select option { background: var(--bg-raised); color: var(--text); }
   .toast { max-width: 100%; }
 
   /* ── Intro screen ── */
-  .intro-hero {
-    bottom: 24px;
+
+  /* Switch from absolute-bottom layout to flex-column so content
+     never overflows upward off screen (save card + 3 buttons + h1) */
+  #intro-screen {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .intro-wordmark {
+    /* keep pinned top-left, but respect notch */
+    top: max(16px, env(safe-area-inset-top));
     left: 16px;
-    right: 16px;
+  }
+
+  .intro-hero {
+    position: static;  /* leave absolute flow so height is measurable */
+    bottom: auto;
+    left: auto;
+    right: auto;
     max-width: 100%;
+    padding: 0 16px max(24px, env(safe-area-inset-bottom));
   }
 
   .intro-hero h1 {
-    font-size: clamp(28px, 9vw, 48px);
+    font-size: clamp(22px, 8vw, 36px);
+    margin-bottom: 10px;
+  }
+
+  .intro-hero .intro-sub {
+    font-size: 13px;
+    margin-bottom: 16px;
   }
 
   .intro-actions {
@@ -1721,14 +1745,10 @@ select option { background: var(--bg-raised); color: var(--text); }
 
   .intro-actions .btn,
   .intro-actions .btn-primary {
+    touch-action: manipulation;
     width: 100%;
-    min-height: 48px;
-    font-size: 14px;
-  }
-
-  .intro-wordmark {
-    top: 16px;
-    left: 16px;
+    min-height: 52px;
+    font-size: 15px;
   }
 
   /* ── Cards ── */
@@ -5039,7 +5059,7 @@ window.addEventListener('beforeunload', (e) => {
       const intro = document.getElementById('intro-screen');
       if (intro) {
         const banner = document.createElement('div');
-        banner.style.cssText = 'background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);border-radius:3px;padding:12px 24px;margin-bottom:16px;font-family:var(--font-mono);font-size:11px;color:#818cf8;text-align:center;';
+        banner.style.cssText = 'background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);border-radius:3px;padding:12px 16px;margin-bottom:16px;font-family:var(--font-mono);font-size:11px;color:#818cf8;text-align:center;';
         const nwNum = parseInt(nw, 10);
         const nwText = nwNum > 0 ? ` Their net worth: <span style="color:#a5b4fc;font-weight:700;">${formatNum(nwNum)}</span>` : '';
         banner.innerHTML = `<span style="font-size:14px;">🏭</span> You were invited by a fellow factory operator!${nwText}`;
@@ -5081,7 +5101,7 @@ window.addEventListener('beforeunload', (e) => {
 
     // Insert save summary card
     const summary = document.createElement('div');
-    summary.style.cssText = 'background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:3px;padding:14px 24px;margin-bottom:16px;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);min-width:260px;';
+    summary.style.cssText = 'background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:3px;padding:12px 16px;margin-bottom:16px;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);';
     summary.innerHTML = `
       <div style="font-family:var(--font-display);font-weight:700;font-size:12px;color:var(--accent);margin-bottom:8px;letter-spacing:0.1em;text-transform:uppercase;">Save Found</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;">
