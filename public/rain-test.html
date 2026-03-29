@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Rain Animation Test</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #09090b;
+    color: #ececef;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+  }
+
+  /* The bar we're testing — same height as the real topbar */
+  #rain-bar {
+    position: relative;
+    width: 100%;
+    height: 54px;
+    background: #131316;
+    border-bottom: 1px solid rgba(161,161,170,0.12);
+    overflow: hidden;
+  }
+  #rain-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  #bar-label {
+    position: relative;
+    z-index: 1;
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: 100%;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #71717a;
+  }
+  #bar-label .brand { color: #f59e0b; font-weight: 700; }
+  #total-ipm { color: #f59e0b; font-size: 16px; font-weight: 700; margin-left: auto; }
+
+  /* Controls */
+  #controls {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 8px;
+  }
+  .res-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: #1a1a1f;
+    border: 1px solid rgba(161,161,170,0.08);
+    border-radius: 4px;
+  }
+  .res-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .res-name {
+    width: 130px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #a1a1aa;
+  }
+  .res-slider {
+    flex: 1;
+    accent-color: #f59e0b;
+    min-width: 60px;
+  }
+  .res-num {
+    width: 60px;
+    background: #09090b;
+    color: #ececef;
+    border: 1px solid rgba(161,161,170,0.15);
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-family: inherit;
+    font-size: 11px;
+    text-align: right;
+  }
+
+  /* Presets */
+  #presets {
+    padding: 0 20px 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .preset-btn {
+    padding: 4px 12px;
+    background: #1a1a1f;
+    border: 1px solid rgba(161,161,170,0.15);
+    border-radius: 3px;
+    color: #a1a1aa;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .preset-btn:hover { border-color: #f59e0b; color: #f59e0b; }
+
+  /* Full-screen preview */
+  #fullscreen-bar {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 54px - 300px);
+    min-height: 200px;
+    background: #09090b;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(161,161,170,0.08);
+  }
+  #fullscreen-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  #fullscreen-label {
+    position: absolute;
+    bottom: 12px;
+    left: 20px;
+    color: #3f3f46;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Top bar preview (54px, same as game) -->
+<div id="rain-bar">
+  <canvas id="rain-canvas"></canvas>
+  <div id="bar-label">
+    <span class="brand">OK FACTORY</span>
+    <span>— Rain Test</span>
+    <span id="total-ipm">0 items/min</span>
+  </div>
+</div>
+
+<!-- Full-screen preview (intro screen simulation) -->
+<div id="fullscreen-bar">
+  <canvas id="fullscreen-canvas"></canvas>
+  <div id="fullscreen-label">Intro Screen Preview</div>
+</div>
+
+<!-- Tuning sliders -->
+<div id="presets">
+  <button class="preset-btn" onclick="setAll(0)">Clear All</button>
+  <button class="preset-btn" onclick="setAll(100)">100 each</button>
+  <button class="preset-btn" onclick="setAll(10000)">10K each</button>
+  <button class="preset-btn" onclick="setAll(1000000)">1M each</button>
+  <button class="preset-btn" onclick="setEarlyGame()">Early Game</button>
+  <button class="preset-btn" onclick="setMidGame()">Mid Game</button>
+  <button class="preset-btn" onclick="setLateGame()">Late Game</button>
+  <button class="preset-btn" onclick="setEndGame()">End Game (10M)</button>
+  <button class="preset-btn" onclick="setInsane()">Insane (1B+)</button>
+</div>
+
+<div id="tuning" style="padding:0 20px 12px;display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
+  <div style="display:flex;align-items:center;gap:6px;">
+    <label style="font-size:10px;color:#71717a;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;">Max Visual/min</label>
+    <input type="range" id="tune-max-vis" min="1000" max="500000" step="1000" value="120000" style="width:120px;accent-color:#f59e0b;">
+    <span id="tune-max-vis-val" style="color:#f59e0b;font-size:11px;min-width:50px;">120000</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <label style="font-size:10px;color:#71717a;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;">Speed Cap (px/s)</label>
+    <input type="range" id="tune-speed" min="10" max="2000" step="10" value="600" style="width:120px;accent-color:#f59e0b;">
+    <span id="tune-speed-val" style="color:#f59e0b;font-size:11px;min-width:30px;">600</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <label style="font-size:10px;color:#71717a;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;">Max Size (px)</label>
+    <input type="range" id="tune-size" min="4" max="40" step="1" value="18" style="width:80px;accent-color:#f59e0b;">
+    <span id="tune-size-val" style="color:#f59e0b;font-size:11px;min-width:20px;">18</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <label style="font-size:10px;color:#71717a;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;">Max Opacity</label>
+    <input type="range" id="tune-opacity" min="0.1" max="1" step="0.05" value="1" style="width:80px;accent-color:#f59e0b;">
+    <span id="tune-opacity-val" style="color:#f59e0b;font-size:11px;min-width:30px;">1.00</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <label style="font-size:10px;color:#71717a;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;">Spawn/frame cap</label>
+    <input type="range" id="tune-batch" min="1" max="1000" step="5" value="200" style="width:80px;accent-color:#f59e0b;">
+    <span id="tune-batch-val" style="color:#f59e0b;font-size:11px;min-width:25px;">200</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <label style="font-size:10px;color:#71717a;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;">Efficiency %</label>
+    <input type="range" id="tune-efficiency" min="10" max="500" step="5" value="100" style="width:120px;accent-color:#f59e0b;">
+    <span id="tune-efficiency-val" style="color:#f59e0b;font-size:11px;min-width:35px;">100%</span>
+  </div>
+</div>
+
+<!-- Controls -->
+<div id="controls"></div>
+
+<script>
+// 20 resources with distinct colors
+const RESOURCES = [
+  { id: 'iron_ore',        name: 'Iron Ore',        color: '#8b6e5a' },
+  { id: 'copper_ore',      name: 'Copper Ore',      color: '#c87533' },
+  { id: 'limestone',       name: 'Limestone',       color: '#c9b98a' },
+  { id: 'coal',            name: 'Coal',            color: '#3a3a3a' },
+  { id: 'iron_ingot',      name: 'Iron Ingot',      color: '#a0a0a0' },
+  { id: 'copper_ingot',    name: 'Copper Ingot',    color: '#e8943a' },
+  { id: 'steel_ingot',     name: 'Steel Ingot',     color: '#6b7280' },
+  { id: 'iron_plate',      name: 'Iron Plate',      color: '#9ca3af' },
+  { id: 'copper_wire',     name: 'Copper Wire',     color: '#f59e0b' },
+  { id: 'steel_beam',      name: 'Steel Beam',      color: '#6b7280' },
+  { id: 'circuit_board',   name: 'Circuit Board',   color: '#22c55e' },
+  { id: 'rotor',           name: 'Rotor',           color: '#6b7280' },
+  { id: 'computer',        name: 'Computer',        color: '#3b82f6' },
+  { id: 'uranium',         name: 'Uranium',         color: '#4ade80' },
+  { id: 'ai_limiter',      name: 'AI Limiter',      color: '#a855f7' },
+  { id: 'supercomputer',   name: 'Supercomputer',   color: '#3b82f6' },
+  { id: 'turbo_motor',     name: 'Turbo Motor',     color: '#ef4444' },
+  { id: 'nuclear_pasta',   name: 'Nuclear Pasta',   color: '#f97316' },
+  { id: 'quantum_oscillator', name: 'Quantum Osc.', color: '#e879f9' },
+  { id: 'dark_matter_crystal', name: 'Dark Matter',  color: '#7c3aed' },
+];
+
+// State: items/min per resource
+const rates = {};
+RESOURCES.forEach(r => rates[r.id] = 0);
+
+// Build controls
+const controlsEl = document.getElementById('controls');
+RESOURCES.forEach(r => {
+  const row = document.createElement('div');
+  row.className = 'res-row';
+  row.innerHTML = `
+    <div class="res-swatch" style="background:${r.color}"></div>
+    <div class="res-name">${r.name}</div>
+    <input type="range" class="res-slider" min="0" max="1000000000" step="1" value="0" data-id="${r.id}">
+    <input type="number" class="res-num" min="0" max="1e15" step="1" value="0" data-id="${r.id}">
+  `;
+  controlsEl.appendChild(row);
+  const slider = row.querySelector('.res-slider');
+  const num = row.querySelector('.res-num');
+  slider.addEventListener('input', () => { num.value = slider.value; rates[r.id] = Number(slider.value); });
+  num.addEventListener('input', () => { slider.value = num.value; rates[r.id] = Math.max(0, Number(num.value) || 0); });
+});
+
+function setAll(v) {
+  RESOURCES.forEach(r => {
+    rates[r.id] = v;
+    const slider = document.querySelector(`.res-slider[data-id="${r.id}"]`);
+    const num = document.querySelector(`.res-num[data-id="${r.id}"]`);
+    if (slider) slider.value = v;
+    if (num) num.value = v;
+  });
+}
+
+function setPreset(values) {
+  RESOURCES.forEach((r, i) => {
+    const v = values[i] || 0;
+    rates[r.id] = v;
+    const slider = document.querySelector(`.res-slider[data-id="${r.id}"]`);
+    const num = document.querySelector(`.res-num[data-id="${r.id}"]`);
+    if (slider) slider.value = v;
+    if (num) num.value = v;
+  });
+}
+
+function setEarlyGame() {
+  // Iron + copper basics, ~180 total
+  setPreset([35, 17, 0, 0, 35, 17, 0, 23, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+}
+function setMidGame() {
+  // More diverse, ~10k total
+  setPreset([600, 300, 200, 150, 600, 300, 300, 450, 350, 300, 200, 150, 50, 0, 50, 0, 0, 0, 0, 0]);
+}
+function setLateGame() {
+  // Heavy production, ~500k total
+  setPreset([50000, 30000, 20000, 10000, 50000, 30000, 25000, 40000, 30000, 25000, 15000, 10000, 5000, 2000, 5000, 2000, 1000, 500, 200, 100]);
+}
+function setEndGame() {
+  // 10M total
+  setPreset([1e6, 800000, 600000, 400000, 1e6, 800000, 700000, 900000, 700000, 600000, 500000, 400000, 300000, 200000, 300000, 200000, 100000, 50000, 20000, 10000]);
+}
+function setInsane() {
+  // 1B+ total
+  setPreset([1e8, 8e7, 6e7, 5e7, 1e8, 8e7, 7e7, 9e7, 7e7, 6e7, 5e7, 4e7, 3e7, 2e7, 2e7, 1e7, 5e6, 2e6, 1e6, 5e5]);
+}
+
+// ─── Animation Engine ───
+function getTotalIPM() {
+  let t = 0;
+  for (const id in rates) t += rates[id];
+  return t;
+}
+
+function buildColorPool() {
+  // Collect active resources and their rates
+  const active = [];
+  let totalRate = 0;
+  for (const r of RESOURCES) {
+    const rate = rates[r.id];
+    if (rate > 0) {
+      active.push({ color: r.color, rate });
+      totalRate += rate;
+    }
+  }
+  if (active.length === 0) return ['#333'];
+
+  // Distribute 200 pool slots proportionally, minimum 1 per active resource
+  const poolSize = 200;
+  const pool = [];
+  for (const a of active) {
+    const count = Math.max(1, Math.round((a.rate / totalRate) * poolSize));
+    for (let i = 0; i < count; i++) pool.push(a.color);
+  }
+  return pool;
+}
+
+// Tuning params (live from sliders)
+const tune = { maxVis: 120000, speedCap: 600, maxSize: 18, maxOpacity: 1, batchCap: 200, efficiency: 100 };
+['max-vis','speed','size','opacity','batch','efficiency'].forEach(key => {
+  const el = document.getElementById('tune-' + key);
+  const valEl = document.getElementById('tune-' + key + '-val');
+  const prop = { 'max-vis': 'maxVis', speed: 'speedCap', size: 'maxSize', opacity: 'maxOpacity', batch: 'batchCap', efficiency: 'efficiency' }[key];
+  el.addEventListener('input', () => {
+    tune[prop] = Number(el.value);
+    valEl.textContent = key === 'efficiency' ? el.value + '%' : el.value;
+  });
+});
+
+// Shared rain renderer
+function createRainState() {
+  return { items: [], lastFrame: 0, lastSpawn: 0 };
+}
+
+function renderRain(state, canvas, now) {
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const tw = Math.round(rect.width * dpr);
+  const th = Math.round(rect.height * dpr);
+  if (canvas.width !== tw || canvas.height !== th) {
+    canvas.width = tw;
+    canvas.height = th;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  const W = rect.width;
+  const H = rect.height;
+  const dt = state.lastFrame ? (now - state.lastFrame) / 1000 : 0;
+  state.lastFrame = now;
+  ctx.clearRect(0, 0, W, H);
+
+  const totalIPM = getTotalIPM();
+  if (totalIPM < 0.1) return;
+
+  // Spawn — log scale with steep power curve, tuneable cap
+  const pool = buildColorPool();
+  const logT = totalIPM > 0 ? Math.log10(totalIPM) : 0;
+  const visualIPM = Math.min(tune.maxVis, 50 * Math.pow(logT, 2.5));
+  const interval = 60000 / Math.max(1, visualIPM);
+
+  // Speed: steeper log curve, capped by slider, scaled by efficiency
+  const eff = tune.efficiency / 100;
+  const speedBase = Math.min(tune.speedCap, 20 + logT * logT * 8) * eff;
+  const speedRange = speedBase * 0.4;
+
+  if (!state.lastSpawn) state.lastSpawn = now;
+  let spawned = 0;
+  while (now - state.lastSpawn >= interval && spawned < tune.batchCap) {
+    state.lastSpawn += interval;
+    spawned++;
+    const color = pool[Math.floor(Math.random() * pool.length)];
+    const speed = speedBase + Math.random() * speedRange;
+    state.items.push({ x: 4 + Math.random() * (W - 8), y: -10, color, speed });
+  }
+  if (now - state.lastSpawn >= interval * tune.batchCap) {
+    state.lastSpawn = now;
+  }
+
+  // Size: grows aggressively with log, capped by slider
+  const sz = Math.min(tune.maxSize, 6 + logT * 1.5);
+  const r = sz / 4;
+  // Opacity: grows aggressively, capped by slider
+  const alpha = Math.min(tune.maxOpacity, 0.15 + logT * 0.1);
+
+  for (let i = state.items.length - 1; i >= 0; i--) {
+    const item = state.items[i];
+    item.y += item.speed * dt;
+    if (item.y > H + 12) { state.items.splice(i, 1); continue; }
+
+    const ix = item.x - sz / 2;
+    const iy = item.y - sz / 2;
+    ctx.beginPath();
+    ctx.moveTo(ix + r, iy);
+    ctx.lineTo(ix + sz - r, iy);
+    ctx.quadraticCurveTo(ix + sz, iy, ix + sz, iy + r);
+    ctx.lineTo(ix + sz, iy + sz - r);
+    ctx.quadraticCurveTo(ix + sz, iy + sz, ix + sz - r, iy + sz);
+    ctx.lineTo(ix + r, iy + sz);
+    ctx.quadraticCurveTo(ix, iy + sz, ix, iy + sz - r);
+    ctx.lineTo(ix, iy + r);
+    ctx.quadraticCurveTo(ix, iy, ix + r, iy);
+    ctx.closePath();
+    ctx.fillStyle = item.color;
+    ctx.globalAlpha = alpha;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// Two independent rain states
+const topbarState = createRainState();
+const fullscreenState = createRainState();
+const topbarCanvas = document.getElementById('rain-canvas');
+const fullscreenCanvas = document.getElementById('fullscreen-canvas');
+const totalLabel = document.getElementById('total-ipm');
+
+function formatBig(n) {
+  if (n >= 1e12) return (n / 1e12).toFixed(1) + 'T';
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return String(n);
+}
+
+function animate(now) {
+  requestAnimationFrame(animate);
+  renderRain(topbarState, topbarCanvas, now);
+  renderRain(fullscreenState, fullscreenCanvas, now);
+  totalLabel.textContent = formatBig(getTotalIPM()) + ' items/min';
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

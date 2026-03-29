@@ -267,6 +267,72 @@ body {
 .status-dot.red { background: var(--red); }
 
 /* ═══════════════════════════════════════════════
+   IDLE VIEW (fullscreen rain + stat overlay)
+   ═══════════════════════════════════════════════ */
+#idle-view {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: var(--bg);
+  cursor: none;
+}
+#idle-view.active { display: block; }
+#idle-view canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+#idle-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  background: rgba(9, 9, 11, 0.35);
+}
+#idle-overlay .idle-brand {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+  opacity: 0.7;
+}
+#idle-overlay .idle-stats {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 6px 32px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+#idle-overlay .idle-stats .label {
+  color: rgba(236, 236, 239, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 10px;
+  text-align: right;
+  padding-top: 2px;
+}
+#idle-overlay .idle-stats .value {
+  color: rgba(236, 236, 239, 0.6);
+  font-size: 16px;
+  font-weight: 700;
+}
+#idle-overlay .idle-exit {
+  margin-top: 48px;
+  font-size: 10px;
+  color: rgba(236, 236, 239, 0.2);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════════
    PAGE STYLES
    ═══════════════════════════════════════════════ */
 .page { display: none; }
@@ -1184,7 +1250,7 @@ select option { background: var(--bg-raised); color: var(--text); }
 
 <!-- INTRO -->
 <div id="intro-screen">
-  <canvas id="intro-conveyor-canvas" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none;"></canvas>
+  <canvas id="intro-rain-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;"></canvas>
   <div class="intro-wordmark"><span class="brand">OK FACTORY</span> — v0.1</div>
   <div class="intro-hero">
     <h1>Build.<br><em>Automate.</em><br>Dominate.</h1>
@@ -1269,6 +1335,10 @@ select option { background: var(--bg-raised); color: var(--text); }
     <div class="nav-item" data-page="milestones">
       <span class="icon">🏆</span> Milestones
     </div>
+    <div style="flex:1;"></div>
+    <div class="nav-item" onclick="toggleIdleView()" style="opacity:0.5;font-size:12px;cursor:pointer;">
+      <span class="icon">🖥️</span> Idle View
+    </div>
   </nav>
 
   <!-- MAIN CONTENT -->
@@ -1308,6 +1378,23 @@ select option { background: var(--bg-raised); color: var(--text); }
     <div class="status-item" id="status-saved" style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);">
     </div>
   </footer>
+
+  <!-- IDLE VIEW (fullscreen rain screensaver) -->
+  <div id="idle-view">
+    <canvas id="idle-rain-canvas"></canvas>
+    <div id="idle-overlay">
+      <div class="idle-brand">OK FACTORY</div>
+      <div class="idle-stats">
+        <div class="label">Session</div><div class="value" id="idle-session">00:00:00</div>
+        <div class="label">Efficiency</div><div class="value" id="idle-efficiency">100%</div>
+        <div class="label">Items/min</div><div class="value" id="idle-throughput">0</div>
+        <div class="label">Net Worth</div><div class="value" id="idle-networth">0</div>
+        <div class="label">Power</div><div class="value" id="idle-power">0 / 0 MW</div>
+        <div class="label">Machines</div><div class="value" id="idle-machines">0</div>
+      </div>
+      <div class="idle-exit">Click or press any key to exit</div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -2152,12 +2239,13 @@ const conveyor = {
   throughput: 0,      // cached items/min
   resourcePool: [],   // [color, color, ...] weighted by production rate
   lastFrame: 0,
-  spawnQueue: [],     // scheduled spawn times within the current minute window
-  windowStart: 0,     // start of current 60-second spawn window
+  lastSpawn: 0,       // timestamp of last spawn
+  efficiency: 1,      // 0-2 from computeEfficiency(), scales rain speed
 };
 
 function updateConveyorData(stats) {
   conveyor.throughput = stats.totalThroughput || 0;
+  conveyor.efficiency = stats.efficiency || 1;
   // Build weighted color pool from what's being produced
   const pool = [];
   const allRecipes = getAllRecipes();
@@ -2181,33 +2269,20 @@ function updateConveyorData(stats) {
   conveyor.resourcePool = pool.length > 0 ? pool : ['#444'];
 }
 
-function scheduleSpawnWindow(now, W) {
-  // Schedule random spawn times for the next 60s window
-  conveyor.windowStart = now;
-  conveyor.spawnQueue = [];
-  // Visual items per minute: scale with throughput but cap for performance
-  const visualIPM = Math.min(300, Math.max(0, conveyor.throughput * 0.5));
-  const count = Math.round(visualIPM);
-  for (let i = 0; i < count; i++) {
-    conveyor.spawnQueue.push({
-      time: now + Math.random() * 60000,
-      x: 4 + Math.random() * (W - 8),  // random x, with margin
-    });
-  }
-  conveyor.spawnQueue.sort((a, b) => a.time - b.time);
-}
-
 function animateRain(now) {
   requestAnimationFrame(animateRain);
   const canvas = document.getElementById('topbar-rain');
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
   const rect = canvas.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return;
+  const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
-    canvas.width = Math.round(rect.width * dpr);
-    canvas.height = Math.round(rect.height * dpr);
-    ctx.scale(dpr, dpr);
+  const targetW = Math.round(rect.width * dpr);
+  const targetH = Math.round(rect.height * dpr);
+  if (canvas.width !== targetW || canvas.height !== targetH) {
+    canvas.width = targetW;
+    canvas.height = targetH;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   const W = rect.width;
   const H = rect.height;
@@ -2217,22 +2292,30 @@ function animateRain(now) {
 
   if (conveyor.throughput < 0.1) return;
 
-  // ── Re-schedule spawn window every 60s ──
-  if (!conveyor.windowStart || now - conveyor.windowStart >= 60000) {
-    scheduleSpawnWindow(now, W);
-  }
-
-  // ── Spawn items whose scheduled time has arrived ──
-  while (conveyor.spawnQueue.length > 0 && conveyor.spawnQueue[0].time <= now) {
-    const spawn = conveyor.spawnQueue.shift();
+  // ── Spawn: log-scale density, steep power curve ──
+  const logT = conveyor.throughput > 0 ? Math.log10(conveyor.throughput) : 0;
+  const visualIPM = Math.min(120000, 50 * Math.pow(logT, 2.5));
+  const interval = 60000 / Math.max(1, visualIPM);
+  const eff = conveyor.efficiency; // 0-2, from power/milestones
+  // 100% eff (1.0) → 0.5× speed, 200% eff (2.0) → 1× speed (full)
+  const effMult = eff * 0.5;
+  const speedBase = Math.min(600, 20 + logT * logT * 8) * effMult;
+  const speedRange = speedBase * 0.4;
+  if (!conveyor.lastSpawn) conveyor.lastSpawn = now;
+  let spawned = 0;
+  while (now - conveyor.lastSpawn >= interval && spawned < 200) {
+    conveyor.lastSpawn += interval;
+    spawned++;
     const color = conveyor.resourcePool[Math.floor(Math.random() * conveyor.resourcePool.length)];
-    const speed = 20 + Math.random() * 30; // 20-50 px/s fall speed
-    conveyor.items.push({ x: spawn.x, y: -10, color, speed });
+    const speed = speedBase + Math.random() * speedRange;
+    conveyor.items.push({ x: 4 + Math.random() * (W - 8), y: -10, color, speed });
   }
+  if (now - conveyor.lastSpawn >= interval * 200) conveyor.lastSpawn = now;
 
   // ── Move & draw falling items ──
-  const sz = 8;
-  const r = 2;
+  const sz = Math.min(18, 6 + logT * 1.5);
+  const r = sz / 4;
+  const alpha = Math.min(1, 0.15 + logT * 0.1);
   for (let i = conveyor.items.length - 1; i >= 0; i--) {
     const item = conveyor.items[i];
     item.y += item.speed * dt;
@@ -2253,7 +2336,7 @@ function animateRain(now) {
     ctx.quadraticCurveTo(ix, iy, ix + r, iy);
     ctx.closePath();
     ctx.fillStyle = item.color;
-    ctx.globalAlpha = 0.45;
+    ctx.globalAlpha = alpha;
     ctx.fill();
     ctx.globalAlpha = 1;
   }
@@ -2261,6 +2344,126 @@ function animateRain(now) {
 
 // Start the animation loop once
 requestAnimationFrame(animateRain);
+
+// ─── IDLE VIEW (fullscreen rain screensaver) ─────────────────
+let idleActive = false;
+const idleRainState = { items: [], lastFrame: 0, lastSpawn: 0 };
+
+function toggleIdleView() {
+  if (idleActive) exitIdleView();
+  else enterIdleView();
+}
+
+function enterIdleView() {
+  idleActive = true;
+  idleRainState.items = [];
+  idleRainState.lastFrame = 0;
+  idleRainState.lastSpawn = 0;
+  document.getElementById('idle-view').classList.add('active');
+  requestAnimationFrame(animateIdleRain);
+}
+
+function exitIdleView() {
+  idleActive = false;
+  document.getElementById('idle-view').classList.remove('active');
+}
+
+// Close on click or keypress
+document.getElementById('idle-view').addEventListener('click', exitIdleView);
+document.addEventListener('keydown', (e) => {
+  if (idleActive && e.key !== 'F11') exitIdleView();
+});
+
+function animateIdleRain(now) {
+  if (!idleActive) return;
+  requestAnimationFrame(animateIdleRain);
+
+  const canvas = document.getElementById('idle-rain-canvas');
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const tw = Math.round(rect.width * dpr);
+  const th = Math.round(rect.height * dpr);
+  if (canvas.width !== tw || canvas.height !== th) {
+    canvas.width = tw;
+    canvas.height = th;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  const W = rect.width;
+  const H = rect.height;
+  const dt = idleRainState.lastFrame ? (now - idleRainState.lastFrame) / 1000 : 0;
+  idleRainState.lastFrame = now;
+  ctx.clearRect(0, 0, W, H);
+
+  const tp = conveyor.throughput;
+  if (tp < 0.1) return;
+
+  const pool = conveyor.resourcePool.length > 0 ? conveyor.resourcePool : ['#444'];
+  const logT = Math.log10(tp);
+  const visualIPM = Math.min(120000, 50 * Math.pow(logT, 2.5));
+  const interval = 60000 / Math.max(1, visualIPM);
+  const eff = conveyor.efficiency;
+  const effMult = eff * 0.5;
+  const speedBase = Math.min(600, 20 + logT * logT * 8) * effMult;
+  const speedRange = speedBase * 0.4;
+
+  if (!idleRainState.lastSpawn) idleRainState.lastSpawn = now;
+  let spawned = 0;
+  while (now - idleRainState.lastSpawn >= interval && spawned < 200) {
+    idleRainState.lastSpawn += interval;
+    spawned++;
+    const color = pool[Math.floor(Math.random() * pool.length)];
+    const speed = speedBase + Math.random() * speedRange;
+    idleRainState.items.push({ x: Math.random() * W, y: -14, color, speed });
+  }
+  if (now - idleRainState.lastSpawn >= interval * 200) idleRainState.lastSpawn = now;
+
+  const sz = Math.min(18, 6 + logT * 1.5);
+  const r = sz / 4;
+  const alpha = Math.min(1, 0.15 + logT * 0.1);
+
+  for (let i = idleRainState.items.length - 1; i >= 0; i--) {
+    const item = idleRainState.items[i];
+    item.y += item.speed * dt;
+    if (item.y > H + 14) { idleRainState.items.splice(i, 1); continue; }
+    const ix = item.x - sz / 2, iy = item.y - sz / 2;
+    ctx.beginPath();
+    ctx.moveTo(ix + r, iy);
+    ctx.lineTo(ix + sz - r, iy);
+    ctx.quadraticCurveTo(ix + sz, iy, ix + sz, iy + r);
+    ctx.lineTo(ix + sz, iy + sz - r);
+    ctx.quadraticCurveTo(ix + sz, iy + sz, ix + sz - r, iy + sz);
+    ctx.lineTo(ix + r, iy + sz);
+    ctx.quadraticCurveTo(ix, iy + sz, ix, iy + sz - r);
+    ctx.lineTo(ix, iy + r);
+    ctx.quadraticCurveTo(ix, iy, ix + r, iy);
+    ctx.closePath();
+    ctx.fillStyle = item.color;
+    ctx.globalAlpha = alpha;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // Update idle stats overlay
+  updateIdleStats();
+}
+
+function updateIdleStats() {
+  if (!gameState) return;
+  const stats = getStats();
+  const elapsed = Date.now() - gameState.startTime;
+  const h = String(Math.floor(elapsed / 3600000)).padStart(2,'0');
+  const m = String(Math.floor((elapsed % 3600000) / 60000)).padStart(2,'0');
+  const s = String(Math.floor((elapsed % 60000) / 1000)).padStart(2,'0');
+  document.getElementById('idle-session').textContent = `${h}:${m}:${s}`;
+  document.getElementById('idle-efficiency').textContent = `${Math.round(stats.efficiency * 100)}%`;
+  document.getElementById('idle-throughput').textContent = formatNum(Math.round(stats.totalThroughput));
+  document.getElementById('idle-networth').textContent = formatNum(Math.round(stats.netWorth));
+  document.getElementById('idle-power').textContent = `${Math.round(stats.powerSupply)} / ${Math.round(stats.powerDemand)} MW`;
+  document.getElementById('idle-machines').textContent = String(stats.totalMachines);
+}
 
 
 
@@ -3706,8 +3909,7 @@ function doNewRun() {
   closeModal();
   gameState = newGameState();
   conveyor.items = [];
-  conveyor.spawnQueue = [];
-  conveyor.windowStart = 0;
+  conveyor.lastSpawn = 0;
   conveyor.throughput = 0;
   conveyor.resourcePool = ['#444'];
   updateUI();
@@ -3735,70 +3937,93 @@ window.addEventListener('beforeunload', (e) => {
   }
 });
 
-// ─── INTRO CONVEYOR ANIMATION ───────────────────────────────
-(function initIntroConveyor() {
-  const introConveyor = {
+// ─── INTRO RAIN ANIMATION ────────────────────────────────────
+(function initIntroRain() {
+  const introRain = {
     items: [],
-    trackOffset: 0,
     lastFrame: 0,
-    speed: 60,
-    colors: ['#f59e0b','#3b82f6','#ef4444','#10b981','#8b5cf6','#ec4899','#06b6d4','#84cc16'],
     lastSpawn: 0,
+    throughput: 150, // default: gentle rain for new visitors
+    colors: ['#f59e0b','#3b82f6','#ef4444','#10b981','#8b5cf6','#ec4899','#06b6d4','#84cc16'],
   };
-  function animateIntro(now) {
-    const canvas = document.getElementById('intro-conveyor-canvas');
-    if (!canvas || canvas.closest('#intro-screen')?.classList.contains('fade-out')) return;
-    requestAnimationFrame(animateIntro);
-    const ctx = canvas.getContext('2d');
+
+  // If there's a save, compute throughput and colors from actual production
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) {
+      const save = JSON.parse(raw);
+      if (save.state && save.state.floors) {
+        let tp = 0;
+        const pool = [];
+        const allR = Object.assign({}, RECIPES, ALT_RECIPES || {});
+        for (const floor of save.state.floors) {
+          if (!floor.unlocked) continue;
+          for (const slot of floor.slots) {
+            if (!slot.machine || !slot.recipe) continue;
+            const recipe = allR[slot.recipe];
+            if (!recipe) continue;
+            for (const [res, amount] of Object.entries(recipe.outputs)) {
+              const prod = (amount / recipe.time) * 60;
+              tp += prod;
+              const color = RESOURCES[res]?.color || '#666';
+              const weight = Math.max(1, Math.round(prod / 5));
+              for (let i = 0; i < weight && pool.length < 200; i++) pool.push(color);
+            }
+          }
+        }
+        if (tp > 0) introRain.throughput = tp;
+        if (pool.length > 0) introRain.colors = pool;
+      }
+    }
+  } catch(e) { /* ignore parse errors */ }
+
+  function animateIntroRain(now) {
+    const introEl = document.getElementById('intro-screen');
+    if (!introEl || introEl.classList.contains('fade-out')) return;
+    requestAnimationFrame(animateIntroRain);
+    const canvas = document.getElementById('intro-rain-canvas');
+    if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
-    if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
-      canvas.width = Math.round(rect.width * dpr);
-      canvas.height = Math.round(rect.height * dpr);
-      ctx.scale(dpr, dpr);
+    const targetW = Math.round(rect.width * dpr);
+    const targetH = Math.round(rect.height * dpr);
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     const W = rect.width, H = rect.height;
-    const dt = introConveyor.lastFrame ? (now - introConveyor.lastFrame) / 1000 : 0;
-    introConveyor.lastFrame = now;
+    const dt = introRain.lastFrame ? (now - introRain.lastFrame) / 1000 : 0;
+    introRain.lastFrame = now;
     ctx.clearRect(0, 0, W, H);
-    const midY = H / 2;
-    // Dashed track
-    introConveyor.trackOffset = (introConveyor.trackOffset + dt * introConveyor.speed) % 16;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([8, 8]);
-    ctx.lineDashOffset = -introConveyor.trackOffset;
-    ctx.beginPath();
-    ctx.moveTo(0, midY);
-    ctx.lineTo(W, midY);
-    ctx.stroke();
-    ctx.restore();
-    // Subtle glow
-    ctx.save();
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.12)';
-    ctx.lineWidth = 6;
-    ctx.shadowColor = 'rgba(245, 158, 11, 0.35)';
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    ctx.moveTo(0, midY);
-    ctx.lineTo(W, midY);
-    ctx.stroke();
-    ctx.restore();
-    // Spawn items
-    const interval = 400;
-    if (now - introConveyor.lastSpawn >= interval) {
-      const color = introConveyor.colors[Math.floor(Math.random() * introConveyor.colors.length)];
-      introConveyor.items.push({ x: -10, color });
-      introConveyor.lastSpawn = now;
+
+    // Spawn: log-scale density, steep power curve
+    const logT = introRain.throughput > 0 ? Math.log10(introRain.throughput) : 0;
+    const visualIPM = Math.min(120000, 50 * Math.pow(logT, 2.5));
+    const interval = 60000 / Math.max(1, visualIPM);
+    const speedBase = Math.min(600, 20 + logT * logT * 8);
+    const speedRange = speedBase * 0.4;
+    if (!introRain.lastSpawn) introRain.lastSpawn = now;
+    let spawned = 0;
+    while (now - introRain.lastSpawn >= interval && spawned < 200) {
+      introRain.lastSpawn += interval;
+      spawned++;
+      const color = introRain.colors[Math.floor(Math.random() * introRain.colors.length)];
+      const speed = speedBase + Math.random() * speedRange;
+      introRain.items.push({ x: Math.random() * W, y: -10, color, speed });
     }
-    // Move & draw items
-    const sz = 14, r = 3;
-    for (let i = introConveyor.items.length - 1; i >= 0; i--) {
-      const item = introConveyor.items[i];
-      item.x += introConveyor.speed * dt;
-      if (item.x > W + 20) { introConveyor.items.splice(i, 1); continue; }
-      const ix = item.x - sz / 2, iy = midY - sz / 2;
+    if (now - introRain.lastSpawn >= interval * 200) introRain.lastSpawn = now;
+
+    // Move & draw
+    const sz = Math.min(18, 6 + logT * 1.5), r = sz / 4;
+    const alpha = Math.min(1, 0.15 + logT * 0.1);
+    for (let i = introRain.items.length - 1; i >= 0; i--) {
+      const item = introRain.items[i];
+      item.y += item.speed * dt;
+      if (item.y > H + 12) { introRain.items.splice(i, 1); continue; }
+      const ix = item.x - sz / 2, iy = item.y - sz / 2;
       ctx.beginPath();
       ctx.moveTo(ix + r, iy);
       ctx.lineTo(ix + sz - r, iy);
@@ -3811,16 +4036,12 @@ window.addEventListener('beforeunload', (e) => {
       ctx.quadraticCurveTo(ix, iy, ix + r, iy);
       ctx.closePath();
       ctx.fillStyle = item.color;
-      ctx.globalAlpha = 0.85;
+      ctx.globalAlpha = alpha;
       ctx.fill();
-      ctx.globalAlpha = 0.15;
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 1;
-      ctx.stroke();
       ctx.globalAlpha = 1;
     }
   }
-  requestAnimationFrame(animateIntro);
+  requestAnimationFrame(animateIntroRain);
 })();
 
 // On load: check for existing save and show continue button
