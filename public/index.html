@@ -1964,6 +1964,8 @@ function gameTick() {
         }
       }
 
+      slot._produced = canProduce;
+
       if (canProduce) {
         // Consume inputs
         for (const [res, amount] of Object.entries(recipe.inputs)) {
@@ -2660,19 +2662,24 @@ function renderFloors() {
     const recipe = slot.recipe ? allRecipes[slot.recipe] : null;
     const powerEff = efficiency * slot.clockSpeed;
 
-    // Check actual resource availability for this machine
+    // Check resource availability: use last tick's actual result if available,
+    // fall back to instantaneous storage check (before first tick)
     let resourceEff = 1;
     let starved = false;
     if (recipe && Object.keys(recipe.inputs).length > 0) {
-      for (const [res, amount] of Object.entries(recipe.inputs)) {
-        const needed = (amount / recipe.time) * powerEff;
-        const available = gameState.storage[res] || 0;
-        if (needed > 0) {
-          const ratio = Math.min(1, available / needed);
-          resourceEff = Math.min(resourceEff, ratio);
+      if (slot._produced === true) {
+        resourceEff = 1;
+      } else {
+        for (const [res, amount] of Object.entries(recipe.inputs)) {
+          const needed = (amount / recipe.time) * powerEff;
+          const available = gameState.storage[res] || 0;
+          if (needed > 0) {
+            const ratio = Math.min(1, available / needed);
+            resourceEff = Math.min(resourceEff, ratio);
+          }
         }
+        if (resourceEff < 0.01) starved = true;
       }
-      if (resourceEff < 0.01) starved = true;
     }
 
     const eff = powerEff * resourceEff;

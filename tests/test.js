@@ -755,6 +755,42 @@ T.group('gameTick() — core production loop', () => {
   });
 });
 
+// ─── gameTick — _produced flag for display accuracy ──────────
+
+T.group('gameTick() — slot._produced display flag', () => {
+  T.test('matched miner+smelter: smelter._produced is true', () => {
+    const s = freshState();
+    s.manualPower = 200;
+    s.floors[0].slots[0].machine = 'miner_mk1';
+    s.floors[0].slots[0].recipe  = 'mine_iron';
+    s.floors[0].slots[1].machine = 'smelter';
+    s.floors[0].slots[1].recipe  = 'smelt_iron';
+    G.gameTick();
+    assert.strictEqual(s.floors[0].slots[1]._produced, true,
+      'smelter should produce when miner feeds it in same tick');
+  });
+
+  T.test('truly starved smelter: _produced is false', () => {
+    const s = freshState();
+    s.manualPower = 200;
+    s.floors[0].slots[0].machine = 'smelter';
+    s.floors[0].slots[0].recipe  = 'smelt_iron';
+    // no iron ore in storage, no miner
+    G.gameTick();
+    assert.strictEqual(s.floors[0].slots[0]._produced, false,
+      'smelter with no input source should be starved');
+  });
+
+  T.test('miner always has _produced true (no inputs needed)', () => {
+    const s = freshState();
+    s.manualPower = 200;
+    s.floors[0].slots[0].machine = 'miner_mk1';
+    s.floors[0].slots[0].recipe  = 'mine_iron';
+    G.gameTick();
+    assert.strictEqual(s.floors[0].slots[0]._produced, true);
+  });
+});
+
 // ─── getStats() — throughput accounting ───────────────────────
 
 T.group('getStats() — throughput & stats', () => {
