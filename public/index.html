@@ -1828,6 +1828,10 @@ select option { background: var(--bg-raised); color: var(--text); }
         <label>Net Worth</label>
         <div class="value net-worth" id="stat-networth">0</div>
       </div>
+      <div class="topbar-stat">
+        <label>$/min</label>
+        <div class="value" id="stat-vpm">0</div>
+      </div>
       <div style="display:flex;align-items:center;gap:8px;margin-left:8px;border-left:1px solid var(--border);padding-left:16px;">
         <button class="share-btn" onclick="shareFactory()" title="Copy invite link to clipboard">📤 SHARE</button>
         <button class="crank-btn" onclick="crankManualPower()" title="Click to generate manual power!">⚡ CRANK</button>
@@ -1953,6 +1957,7 @@ select option { background: var(--bg-raised); color: var(--text); }
       <div class="label">Efficiency</div><div class="value" id="idle-efficiency">100%</div>
       <div class="label">Items/min</div><div class="value" id="idle-throughput">0</div>
       <div class="label">Net Worth</div><div class="value" id="idle-networth">0</div>
+      <div class="label">$/min</div><div class="value" id="idle-vpm">0</div>
       <div class="label">Power</div><div class="value" id="idle-power">0 / 0 MW</div>
       <div class="label">Machines</div><div class="value" id="idle-machines">0</div>
     </div>
@@ -2816,6 +2821,7 @@ function getStats() {
   let totalMachines = 0;
   let activeFloors = 0;
   let totalThroughput = 0;
+  let valuePerMinute = 0;
   const allRecipes = getAllRecipes();
   const efficiency = computeEfficiency();
 
@@ -2839,8 +2845,9 @@ function getStats() {
             }
           }
           const actualEff = powerEff * resourceEff;
-          for (const [, amount] of Object.entries(recipe.outputs)) {
+          for (const [res, amount] of Object.entries(recipe.outputs)) {
             totalThroughput += (amount / recipe.time) * actualEff * 60;
+            if (RESOURCES[res]) valuePerMinute += (amount / recipe.time) * actualEff * 60 * RESOURCES[res].value;
           }
         }
       }
@@ -2866,6 +2873,7 @@ function getStats() {
     activeFloors,
     netWorth,
     totalThroughput,
+    valuePerMinute,
     totalProduced: gameState.totalProduced,
     hasBuilt: gameState.hasBuilt,
     allResearchDone,
@@ -3186,6 +3194,7 @@ function updateUI() {
 
   document.getElementById('stat-throughput').textContent = formatNum(Math.round(stats.totalThroughput));
   document.getElementById('stat-networth').textContent = formatNum(Math.round(stats.netWorth));
+  document.getElementById('stat-vpm').textContent = formatNum(Math.round(stats.valuePerMinute));
 
   // Power color
   const powerEl = document.getElementById('stat-power');
@@ -3399,6 +3408,7 @@ function updateIdleStats() {
   document.getElementById('idle-networth').textContent = formatNum(Math.round(stats.netWorth));
   document.getElementById('idle-power').textContent = `${Math.round(stats.powerSupply)} / ${Math.round(stats.powerDemand)} MW`;
   document.getElementById('idle-machines').textContent = String(stats.totalMachines);
+  document.getElementById('idle-vpm').textContent = formatNum(Math.round(stats.valuePerMinute));
 }
 
 
