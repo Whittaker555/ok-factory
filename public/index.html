@@ -2888,6 +2888,7 @@ function getStats() {
 
 let currentPage = 'dashboard';
 let currentFloor = 0;
+let hideResearched = false;
 let gameInterval = null;
 let lastTickTime = 0;
 let floorShowMaxRates = false;
@@ -3904,6 +3905,11 @@ function renderResearch() {
   let html = `
     <div class="page-title">RESEARCH LAB</div>
     <div class="page-subtitle">UNLOCK NEW TECHNOLOGIES</div>
+    <div style="margin-bottom:12px;">
+      <button class="btn btn-sm" onclick="hideResearched=!hideResearched;renderResearch();" style="font-size:11px;opacity:${hideResearched ? '1' : '0.5'};${hideResearched ? 'border-color:var(--green);color:var(--green);' : ''}">
+        ${hideResearched ? '✓ ' : ''}HIDE RESEARCHED
+      </button>
+    </div>
   `;
 
   if (gameState.activeResearch) {
@@ -3922,7 +3928,9 @@ function renderResearch() {
   }
 
   for (const tier of tiers) {
-    const tierResearch = Object.entries(RESEARCH).filter(([, r]) => r.tier === tier);
+    let tierResearch = Object.entries(RESEARCH).filter(([, r]) => r.tier === tier);
+    if (tierResearch.length === 0) continue;
+    if (hideResearched) tierResearch = tierResearch.filter(([id]) => !gameState.research[id]?.completed || gameState.activeResearch === id);
     if (tierResearch.length === 0) continue;
 
     html += `<div style="font-family:var(--font-display);font-size:14px;color:var(--text-dim);margin:16px 0 8px;letter-spacing:2px;">TIER ${tier}</div>`;
