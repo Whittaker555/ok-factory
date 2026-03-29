@@ -894,6 +894,42 @@ select option { background: var(--bg-raised); color: var(--text); }
   transform: scale(0.93);
 }
 
+.surge-boost {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+.surge-label {
+  color: var(--green);
+  font-weight: 700;
+  white-space: nowrap;
+  animation: surgePulse 1.5s ease-in-out infinite;
+}
+.surge-bar {
+  width: 40px;
+  height: 4px;
+  background: rgba(34,197,94,0.15);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.surge-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+.surge-time {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+@keyframes surgePulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
 @keyframes crankPulse {
   0%, 100% { transform: scale(1); border-color: var(--red); }
   50% { transform: scale(1.06); border-color: #ff6666; }
@@ -1460,6 +1496,11 @@ select option { background: var(--bg-raised); color: var(--text); }
       <div class="topbar-stat">
         <label>Efficiency</label>
         <div class="value" id="stat-efficiency">100%</div>
+        <div id="surge-boost" class="surge-boost" style="display:none;">
+          <span class="surge-label">⚡ +10%</span>
+          <div class="surge-bar"><div class="surge-fill" id="surge-fill"></div></div>
+          <span class="surge-time" id="surge-time"></span>
+        </div>
       </div>
       <div class="topbar-stat">
         <label>Items/min</label>
@@ -2682,6 +2723,23 @@ function updateUI() {
     }
   }
   document.getElementById('stat-efficiency').textContent = `${Math.round(stats.efficiency * 100)}%`;
+
+  // Surge boost indicator
+  const surgeEl = document.getElementById('surge-boost');
+  if (gameState.challengeEffTimer > 0) {
+    surgeEl.style.display = 'flex';
+    const pct = Math.round(gameState.challengeEffBonus * 100);
+    surgeEl.querySelector('.surge-label').textContent = `⚡ +${pct}%`;
+    const secs = Math.ceil(gameState.challengeEffTimer);
+    document.getElementById('surge-time').textContent = `${secs}s`;
+    // Estimate max duration for fill bar (use 45s as reasonable max)
+    const maxDur = 45;
+    const fillPct = Math.min(100, (gameState.challengeEffTimer / maxDur) * 100);
+    document.getElementById('surge-fill').style.width = `${fillPct}%`;
+  } else {
+    surgeEl.style.display = 'none';
+  }
+
   document.getElementById('stat-throughput').textContent = formatNum(Math.round(stats.totalThroughput));
   document.getElementById('stat-networth').textContent = formatNum(Math.round(stats.netWorth));
 
