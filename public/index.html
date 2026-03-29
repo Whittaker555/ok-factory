@@ -868,6 +868,7 @@ select option { background: var(--bg-raised); color: var(--text); }
 
 /* MANUAL CRANK */
 .crank-btn {
+  touch-action: manipulation; /* prevent double-tap zoom on rapid tapping */
   background: var(--accent-dim);
   border: 1px solid var(--accent-border);
   color: var(--accent);
@@ -1225,6 +1226,7 @@ select option { background: var(--bg-raised); color: var(--text); }
 }
 
 .big-crank-btn {
+  touch-action: manipulation;
   width: 140px;
   height: 140px;
   border-radius: 50%;
