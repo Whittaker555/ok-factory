@@ -7,7 +7,6 @@
     "doc": "docs",
     "test": "tests"
   },
-  "type": "module",
   "scripts": {
     "test": "node tests/test.js",
     "test:mobile": "npx playwright test --project=mobile-chrome --project=mobile-safari",

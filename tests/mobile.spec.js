@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+const { test, expect } = require('@playwright/test');
 
 // Helper: start a new game from the intro screen, dismiss tutorial
 async function startGame(page) {
