@@ -1930,6 +1930,8 @@ function newGameState() {
     manualPowerMax: 200,   // cap for manual power
     challengePower: 0,     // bonus MW from challenges
     challengePowerTimer: 0,// seconds remaining for challenge bonus
+    challengeEffBonus: 0,  // temporary efficiency bonus from challenges (0.1 = +10%)
+    challengeEffTimer: 0,  // seconds remaining for efficiency bonus
     lastChallengeTime: 0,  // tick when last challenge was offered
     challengesSolved: 0,   // total challenges completed
     extraFloorChance: 0,   // % chance of bonus floor on new run (from milestones)
@@ -2063,7 +2065,8 @@ function computeEfficiency() {
   const { supply, demand } = computePower();
   let powerEff = demand > 0 ? Math.min(1, supply / demand) : 1;
   let milestoneBonus = gameState.milestoneBonus;
-  return Math.min(2, powerEff * (1 + milestoneBonus)); // cap at 200%
+  let surgeBonus = gameState.challengeEffTimer > 0 ? gameState.challengeEffBonus : 0;
+  return Math.min(2, powerEff * (1 + milestoneBonus + surgeBonus)); // cap at 200%
 }
 
 function gameTickInner(dt) {
@@ -2090,6 +2093,15 @@ function gameTickInner(dt) {
     if (gameState.challengePowerTimer <= 0) {
       gameState.challengePower = 0;
       gameState.challengePowerTimer = 0;
+    }
+  }
+
+  // Decay challenge efficiency boost timer
+  if (gameState.challengeEffTimer > 0) {
+    gameState.challengeEffTimer -= dt;
+    if (gameState.challengeEffTimer <= 0) {
+      gameState.challengeEffBonus = 0;
+      gameState.challengeEffTimer = 0;
     }
   }
 
@@ -3876,22 +3888,33 @@ function endChallenge(rating, container) {
   const power = Math.round(basePower * scale.powerMult);
   const duration = Math.round(baseDuration * scale.durationMult);
 
+  // Efficiency boost: +10% for duration based on challenge type complexity
+  const effDurations = { calibration: 30, sequence: 45, overload: 20 };
+  const baseEffDuration = effDurations[activeChallengeData?.type] || 30;
+  const effDuration = rating !== 'fail' ? Math.round(baseEffDuration * scale.durationMult) : 0;
+
   gameState.challengePower = power;
   gameState.challengePowerTimer = duration;
+  if (effDuration > 0) {
+    gameState.challengeEffBonus = 0.1;
+    gameState.challengeEffTimer = effDuration;
+  }
   if (rating !== 'fail') gameState.challengesSolved++;
 
+  const effLine = effDuration > 0 ? `<div class="ch-reward" style="color:var(--green);">+10% efficiency for ${effDuration}s</div>` : '';
   container.innerHTML = `
     <div class="challenge-overlay">
       <div class="challenge-box">
         <div class="ch-title">POWER SURGE</div>
         <div class="ch-result ${cls}">${label}</div>
         <div class="ch-reward">${power > 0 ? `+${power} MW for ${duration}s` : 'No bonus power'}</div>
+        ${effLine}
         <button class="btn btn-primary" onclick="dismissChallenge()">OK</button>
       </div>
     </div>
   `;
 
-  if (power > 0) toast(`⚡ Power Surge: +${power} MW for ${duration}s!`, 'success');
+  if (power > 0) toast(`⚡ Power Surge: +${power} MW for ${duration}s` + (effDuration > 0 ? ` | +10% eff for ${effDuration}s` : '') + `!`, 'success');
 
   // Auto-dismiss result after 3 seconds
   setTimeout(dismissChallenge, 3000);
