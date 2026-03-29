@@ -389,23 +389,23 @@ T.group('newGameState() — initial values', () => {
     assert.strictEqual(freshState().tick, 0);
   });
 
-  T.test('8 floors, first 2 unlocked', () => {
+  T.test('8 factories, first 2 unlocked', () => {
     const s = freshState();
     assert.strictEqual(s.floors.length, 8);
     assert(s.floors[0].unlocked);
     assert(s.floors[1].unlocked);
-    for (let i = 2; i < 8; i++) assert(!s.floors[i].unlocked, `floor ${i+1} should be locked`);
+    for (let i = 2; i < 8; i++) assert(!s.floors[i].unlocked, `factory ${i+1} should be locked`);
   });
 
-  T.test('slot counts: 1 row each (3,3,3,3,4,4,5,5)', () => {
+  T.test('slot counts: 1 floor each (3,3,3,3,4,4,5,5)', () => {
     const s = freshState();
     const expected = [3,3,3,3,4,4,5,5];
-    s.floors.forEach((f,i) => assert.strictEqual(f.slots.length, expected[i], `floor ${i+1}`));
+    s.floors.forEach((f,i) => assert.strictEqual(f.slots.length, expected[i], `factory ${i+1}`));
   });
 
-  T.test('floors start with 1 row each', () => {
+  T.test('factories start with 1 floor each', () => {
     const s = freshState();
-    s.floors.forEach((f,i) => assert.strictEqual(f.rows, 1, `floor ${i+1} rows`));
+    s.floors.forEach((f,i) => assert.strictEqual(f.rows, 1, `factory ${i+1} floors`));
   });
 
   T.test('default unlocked machines: miner_mk1, smelter, constructor', () => {
@@ -515,7 +515,7 @@ T.group('computePower() — supply & demand', () => {
     assert.strictEqual(G.computePower().supply, 150);
   });
 
-  T.test('locked floor machines are ignored', () => {
+  T.test('locked factory machines are ignored', () => {
     const s = freshState();
     s.floors[2].slots[0].machine = 'smelter';
     s.floors[2].slots[0].recipe  = 'smelt_iron';
@@ -1065,7 +1065,7 @@ T.group('MILESTONES — new reward types & power surge triggers', () => {
     global.document.getElementById = (id) => id === 'page-milestones' ? el : orig(id);
     G.renderMilestones();
     global.document.getElementById = orig;
-    assert(el.innerHTML.includes('extra floor'), 'should show extra floor reward text');
+    assert(el.innerHTML.includes('extra factory'), 'should show extra factory reward text');
   });
 });
 

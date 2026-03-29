@@ -1462,7 +1462,7 @@ select option { background: var(--bg-raised); color: var(--text); }
       <span class="icon">📊</span> Dashboard
     </div>
     <div class="nav-item" data-page="floors">
-      <span class="icon">🏭</span> Factory Floors
+      <span class="icon">🏭</span> Factories
     </div>
     <div class="nav-item" data-page="research">
       <span class="icon">🔬</span> Research Lab
@@ -1491,7 +1491,7 @@ select option { background: var(--bg-raised); color: var(--text); }
   <main id="main">
     <!-- Dashboard -->
     <div class="page active" id="page-dashboard"></div>
-    <!-- Factory Floors -->
+    <!-- Factories -->
     <div class="page" id="page-floors"></div>
     <!-- Research Lab -->
     <div class="page" id="page-research"></div>
@@ -1878,7 +1878,7 @@ const MILESTONES = [
   { id: 'm14', name: 'Particle Physics',      desc: 'Produce 1 Nuclear Pasta',         check: s => (s.totalProduced.nuclear_pasta||0) >= 1, reward: 'efficiency', rewardVal: 0.05 },
   { id: 'm15', name: 'Quantum Leap',          desc: 'Produce 1 Quantum Oscillator',    check: s => (s.totalProduced.quantum_oscillator||0) >= 1, reward: 'efficiency', rewardVal: 0.05 },
   { id: 'm16', name: 'Singularity',           desc: 'Produce 1 Singularity Cell',      check: s => (s.totalProduced.singularity_cell||0) >= 1, reward: 'efficiency', rewardVal: 0.10 },
-  { id: 'm17', name: 'Floor Manager',         desc: 'Use all 8 factory floors',        check: s => s.activeFloors >= 8, reward: 'efficiency', rewardVal: 0.03 },
+  { id: 'm17', name: 'Factory Mogul',          desc: 'Use all 8 factories',             check: s => s.activeFloors >= 8, reward: 'efficiency', rewardVal: 0.03 },
   { id: 'm18', name: 'Diverse Empire',        desc: 'Produce 30+ different resources', check: s => Object.keys(s.totalProduced).filter(k => s.totalProduced[k] > 0).length >= 30, reward: 'efficiency', rewardVal: 0.05 },
   { id: 'm19', name: 'Speed Demon',           desc: 'Reach 10,000 items/min total',    check: s => s.totalThroughput >= 10000, reward: 'efficiency', rewardVal: 0.05 },
   { id: 'm20', name: 'The Architect',         desc: 'Complete all research',           check: s => s.allResearchDone, reward: 'efficiency', rewardVal: 0.10 },
@@ -1901,14 +1901,14 @@ function newGameState() {
     storage: {},           // resource_id -> quantity
     totalProduced: {},     // resource_id -> total ever produced
     floors: [
-      { name: 'Floor 1', slots: createSlots(3), rows: 1, unlocked: true },
-      { name: 'Floor 2', slots: createSlots(3), rows: 1, unlocked: true },
-      { name: 'Floor 3', slots: createSlots(3), rows: 1, unlocked: false },
-      { name: 'Floor 4', slots: createSlots(3), rows: 1, unlocked: false },
-      { name: 'Floor 5', slots: createSlots(4), rows: 1, unlocked: false },
-      { name: 'Floor 6', slots: createSlots(4), rows: 1, unlocked: false },
-      { name: 'Floor 7', slots: createSlots(5), rows: 1, unlocked: false },
-      { name: 'Floor 8', slots: createSlots(5), rows: 1, unlocked: false },
+      { name: 'Factory 1', slots: createSlots(3), rows: 1, unlocked: true },
+      { name: 'Factory 2', slots: createSlots(3), rows: 1, unlocked: true },
+      { name: 'Factory 3', slots: createSlots(3), rows: 1, unlocked: false },
+      { name: 'Factory 4', slots: createSlots(3), rows: 1, unlocked: false },
+      { name: 'Factory 5', slots: createSlots(4), rows: 1, unlocked: false },
+      { name: 'Factory 6', slots: createSlots(4), rows: 1, unlocked: false },
+      { name: 'Factory 7', slots: createSlots(5), rows: 1, unlocked: false },
+      { name: 'Factory 8', slots: createSlots(5), rows: 1, unlocked: false },
     ],
     research: {},          // research_id -> { started: bool, completed: bool, progress: 0-100 }
     unlockedRecipes: new Set([
@@ -1948,24 +1948,24 @@ function createSlots(count) {
   return slots;
 }
 
-// Floor layout system: columns determined by floor tier
+// Factory layout system: columns determined by factory tier
 function getFloorColumns(floorIdx) {
-  if (floorIdx <= 3) return 3;  // Floors 1-4
-  if (floorIdx <= 5) return 4;  // Floors 5-6
-  return 5;                      // Floors 7-8
+  if (floorIdx <= 3) return 3;  // Factories 1-4
+  if (floorIdx <= 5) return 4;  // Factories 5-6
+  return 5;                      // Factories 7-8
 }
 
-const MAX_ROWS = 6;
+const MAX_FLOORS = 6;
 
-// Row cost: resource cost scales with floor tier and row number
-// Returns { resource, amount } — what it costs to buy the next row
+// Floor cost: resource cost scales with factory tier and floor number
+// Returns { resource, amount } — what it costs to construct the next floor
 function getRowCost(floorIdx, nextRow) {
-  // Tier multipliers: higher floors cost more
+  // Tier multipliers: higher factories cost more
   const tierMult = [1, 1, 2, 2, 4, 4, 8, 8][floorIdx] || 1;
-  // Exponential row scaling
+  // Exponential floor scaling
   const base = 50 * tierMult;
   const amount = Math.round(base * Math.pow(nextRow, 2.2));
-  // Resource progresses with floor tier
+  // Resource progresses with factory tier
   const resources = [
     { id: 'iron_plate', name: 'Iron Plates' },
     { id: 'iron_plate', name: 'Iron Plates' },
@@ -1984,7 +1984,7 @@ function buyRow(floorIdx) {
   const floor = gameState.floors[floorIdx];
   if (!floor || !floor.unlocked) return;
   const rows = floor.rows || 1;
-  if (rows >= MAX_ROWS) { toast('Maximum rows reached!', 'warn'); return; }
+  if (rows >= MAX_FLOORS) { toast('Maximum floors constructed!', 'warn'); return; }
   const cost = getRowCost(floorIdx, rows + 1);
   const have = Math.floor(gameState.storage[cost.resourceId] || 0);
   if (have < cost.amount) {
@@ -1992,13 +1992,13 @@ function buyRow(floorIdx) {
     return;
   }
   gameState.storage[cost.resourceId] -= cost.amount;
-  // Add one row's worth of new slots
+  // Add one floor's worth of new slots
   const cols = getFloorColumns(floorIdx);
   for (let i = 0; i < cols; i++) {
     floor.slots.push({ machine: null, recipe: null, active: true, clockSpeed: 1.0 });
   }
   floor.rows = rows + 1;
-  toast(`Row ${rows + 1} added to ${floor.name}!`, 'success');
+  toast(`Floor ${rows + 1} constructed on ${floor.name}!`, 'success');
   renderFloors();
 }
 
@@ -2259,14 +2259,14 @@ function completeResearch(researchId) {
     }
   }
 
-  // Unlock floors
+  // Unlock factories
   const completedCount = Object.values(gameState.research).filter(r => r.completed).length;
-  if (completedCount >= 3 && !gameState.floors[2].unlocked) { gameState.floors[2].unlocked = true; toast('Floor 3 unlocked!', 'success'); }
-  if (completedCount >= 6 && !gameState.floors[3].unlocked) { gameState.floors[3].unlocked = true; toast('Floor 4 unlocked!', 'success'); }
-  if (completedCount >= 10 && !gameState.floors[4].unlocked) { gameState.floors[4].unlocked = true; toast('Floor 5 unlocked!', 'success'); }
-  if (completedCount >= 15 && !gameState.floors[5].unlocked) { gameState.floors[5].unlocked = true; toast('Floor 6 unlocked!', 'success'); }
-  if (completedCount >= 20 && !gameState.floors[6].unlocked) { gameState.floors[6].unlocked = true; toast('Floor 7 unlocked!', 'success'); }
-  if (completedCount >= 25 && !gameState.floors[7].unlocked) { gameState.floors[7].unlocked = true; toast('Floor 8 unlocked!', 'success'); }
+  if (completedCount >= 3 && !gameState.floors[2].unlocked) { gameState.floors[2].unlocked = true; toast('Factory 3 unlocked!', 'success'); }
+  if (completedCount >= 6 && !gameState.floors[3].unlocked) { gameState.floors[3].unlocked = true; toast('Factory 4 unlocked!', 'success'); }
+  if (completedCount >= 10 && !gameState.floors[4].unlocked) { gameState.floors[4].unlocked = true; toast('Factory 5 unlocked!', 'success'); }
+  if (completedCount >= 15 && !gameState.floors[5].unlocked) { gameState.floors[5].unlocked = true; toast('Factory 6 unlocked!', 'success'); }
+  if (completedCount >= 20 && !gameState.floors[6].unlocked) { gameState.floors[6].unlocked = true; toast('Factory 7 unlocked!', 'success'); }
+  if (completedCount >= 25 && !gameState.floors[7].unlocked) { gameState.floors[7].unlocked = true; toast('Factory 8 unlocked!', 'success'); }
 
   toast(`Research complete: ${research.name}!`, 'success');
   renderCurrentPage();
@@ -2275,7 +2275,7 @@ function completeResearch(researchId) {
 function milestoneRewardText(m) {
   switch (m.reward) {
     case 'efficiency': return `+${Math.round(m.rewardVal * 100)}% efficiency`;
-    case 'extra_floor_chance': return `+${Math.round(m.rewardVal * 100)}% extra floor chance on new runs`;
+    case 'extra_floor_chance': return `+${Math.round(m.rewardVal * 100)}% extra factory chance on new runs`;
     case 'bonus_start_power': return `+${Math.round(m.rewardVal)} MW starting power on new runs`;
     default: return `+${m.rewardVal}`;
   }
@@ -2395,7 +2395,7 @@ const TUTORIAL_STEPS = [
   },
   {
     title: 'The Factory Floor',
-    text: `Good — you've got power stored. Now let's build something with it.<br><br>Click <strong>Factory Floors</strong> in the sidebar to see your production slots.`,
+    text: `Good — you've got power stored. Now let's build something with it.<br><br>Click <strong>Factories</strong> in the sidebar to see your production slots.`,
     action: 'waitForPage:floors',
     spotlight: '.nav-item[data-page="floors"]',
   },
@@ -2936,7 +2936,7 @@ function renderDashboard() {
           ${formatNum(Math.round(stats.totalThroughput))} <span style="font-size:12px;color:var(--text-dim);">items/min</span>
         </div>
         <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:4px;">
-          ${stats.totalMachines} machines | ${stats.activeFloors} active floors
+          ${stats.totalMachines} machines | ${stats.activeFloors} active factories
         </div>
       </div>
     </div>
@@ -3010,7 +3010,7 @@ function generateScoreText() {
   let text = `═══ OK FACTORY SCORE ═══\n`;
   text += `NET WORTH: ${formatNum(Math.round(stats.netWorth))}\n`;
   text += `Session: ${h}h ${m}m\n`;
-  text += `Machines: ${stats.totalMachines} | Floors: ${stats.activeFloors}\n`;
+  text += `Machines: ${stats.totalMachines} | Factories: ${stats.activeFloors}\n`;
   text += `Research: ${completedResearch}/${totalResearch}\n`;
   text += `Milestones: ${milestones}/${MILESTONES.length}\n`;
   text += `Throughput: ${formatNum(Math.round(stats.totalThroughput))} items/min\n`;
@@ -3040,7 +3040,7 @@ function copyScore() {
   navigator.clipboard.writeText(text).then(() => toast('Score copied!', 'success'));
 }
 
-// ─── RENDER: FACTORY FLOORS ─────────────────────────────────
+// ─── RENDER: FACTORIES ──────────────────────────────────────
 function renderFloors() {
   const page = document.getElementById('page-floors');
   const floors = gameState.floors;
@@ -3145,36 +3145,36 @@ function renderFloors() {
     `;
   }).join('');
 
-  // Buy row button
+  // Construct floor button
   const floorRows = floor.rows || 1;
   let buyRowHtml = '';
-  if (floorRows < MAX_ROWS) {
+  if (floorRows < MAX_FLOORS) {
     const cost = getRowCost(currentFloor, floorRows + 1);
     const have = Math.floor(gameState.storage[cost.resourceId] || 0);
     const canAfford = have >= cost.amount;
     buyRowHtml = `
       <div style="margin-top:12px;display:flex;align-items:center;gap:12px;">
         <button class="btn ${canAfford ? 'btn-primary' : ''}" onclick="buyRow(${currentFloor})" ${canAfford ? '' : 'disabled style="opacity:0.4;"'}>
-          + Buy Row ${floorRows + 1}
+          + Construct Floor ${floorRows + 1}
         </button>
         <span style="font-family:var(--font-mono);font-size:11px;color:${canAfford ? 'var(--green)' : 'var(--text-dim)'};">
           Cost: ${formatNum(cost.amount)} ${cost.resourceName} (have ${formatNum(have)})
         </span>
         <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);">
-          ${floorRows}/${MAX_ROWS} rows · ${getFloorColumns(currentFloor)} cols
+          ${floorRows}/${MAX_FLOORS} floors · ${getFloorColumns(currentFloor)} slots/floor
         </span>
       </div>
     `;
   } else {
     buyRowHtml = `
       <div style="margin-top:12px;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);">
-        ${MAX_ROWS}/${MAX_ROWS} rows · ${getFloorColumns(currentFloor)} cols — fully expanded
+        ${MAX_FLOORS}/${MAX_FLOORS} floors · ${getFloorColumns(currentFloor)} slots/floor — fully expanded
       </div>
     `;
   }
 
   page.innerHTML = `
-    <div class="page-title">FACTORY FLOORS</div>
+    <div class="page-title">FACTORIES</div>
     <div class="page-subtitle">CONFIGURE PRODUCTION LINES</div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <div class="tab-bar" style="margin-bottom:0;">${tabsHtml}</div>
@@ -3729,7 +3729,7 @@ function renderMilestones() {
   // Build summary lines for non-zero reward totals
   const summaryParts = [];
   if (gameState.milestoneBonus > 0) summaryParts.push(`+${Math.round(gameState.milestoneBonus * 100)}% efficiency`);
-  if (gameState.extraFloorChance > 0) summaryParts.push(`+${Math.round(gameState.extraFloorChance * 100)}% extra floor chance`);
+  if (gameState.extraFloorChance > 0) summaryParts.push(`+${Math.round(gameState.extraFloorChance * 100)}% extra factory chance`);
   if (gameState.bonusStartPower > 0) summaryParts.push(`+${Math.round(gameState.bonusStartPower)} MW starting power`);
 
   let html = `
@@ -4398,7 +4398,7 @@ function doNewRun() {
     const locked = gameState.floors.findIndex(f => !f.unlocked);
     if (locked >= 0) {
       gameState.floors[locked].unlocked = true;
-      toast('🎲 Milestone bonus: Extra floor unlocked!', 'success');
+      toast('🎲 Milestone bonus: Extra factory unlocked!', 'success');
     }
   }
   // Apply bonus starting power reward
