@@ -503,7 +503,7 @@ button:active, .btn:active { opacity: 0.85; }
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.7);
-  z-index: 500;
+  z-index: 10500;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1233,6 +1233,158 @@ select option { background: var(--bg-raised); color: var(--text); }
   align-items: center;
   gap: 12px;
 }
+
+/* ═══════════════════════════════════════════════
+   TUTORIAL OVERLAY
+   ═══════════════════════════════════════════════ */
+#tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+#tutorial-overlay.active { opacity: 1; pointer-events: auto; }
+#tutorial-overlay.active .tutorial-backdrop { pointer-events: auto; }
+#tutorial-overlay.active.passthrough .tutorial-backdrop { pointer-events: none; }
+
+.tutorial-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(2px);
+}
+
+.tutorial-card {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-raised);
+  border: 1px solid var(--accent-border);
+  border-radius: 4px;
+  padding: 0;
+  width: min(560px, calc(100vw - 48px));
+  box-shadow: 0 0 60px rgba(245, 158, 11, 0.08), 0 20px 40px rgba(0,0,0,0.5);
+  animation: tutorialSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+  z-index: 10002;
+}
+
+@keyframes tutorialSlideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(30px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.tutorial-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 0 20px;
+}
+
+.tutorial-step-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.tutorial-skip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+.tutorial-skip:hover { color: var(--text-dim); }
+
+.tutorial-card-body {
+  padding: 14px 20px 8px 20px;
+}
+
+.tutorial-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 10px;
+  line-height: 1.15;
+}
+
+.tutorial-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--text-dim);
+}
+
+.tutorial-text strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.tutorial-text code {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 2px;
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.tutorial-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px 16px 20px;
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+}
+
+.tutorial-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.tutorial-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-mid);
+  transition: background 0.3s;
+}
+.tutorial-dot.filled { background: var(--accent); }
+.tutorial-dot.current { background: var(--accent); box-shadow: 0 0 6px rgba(245, 158, 11, 0.5); }
+
+.tutorial-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Spotlight cutout for highlighting UI elements */
+.tutorial-spotlight {
+  position: absolute;
+  border: 2px solid var(--accent);
+  border-radius: 4px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7), 0 0 20px rgba(245, 158, 11, 0.15);
+  pointer-events: none;
+  z-index: 10001;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: spotlightPulse 2s ease-in-out infinite;
+}
+
+@keyframes spotlightPulse {
+  0%, 100% { border-color: var(--accent); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7), 0 0 20px rgba(245, 158, 11, 0.15); }
+  50%      { border-color: rgba(245, 158, 11, 0.6); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7), 0 0 30px rgba(245, 158, 11, 0.25); }
+}
 </style>
 </head>
 <body>
@@ -1259,6 +1411,9 @@ select option { background: var(--bg-raised); color: var(--text); }
 <div id="modal-root"></div>
 <!-- CHALLENGE CONTAINER -->
 <div id="challenge-root"></div>
+
+<!-- TUTORIAL OVERLAY -->
+<div id="tutorial-overlay"></div>
 
 <!-- APP -->
 <div id="app" style="display:none;">
@@ -1777,6 +1932,7 @@ function newGameState() {
     challengesSolved: 0,   // total challenges completed
     extraFloorChance: 0,   // % chance of bonus floor on new run (from milestones)
     bonusStartPower: 0,    // bonus MW on new run (from milestones)
+    tutorialDone: false,   // has the player completed or skipped the tutorial
   };
 }
 
@@ -2002,6 +2158,9 @@ function gameTickInner(dt) {
   // Check milestones
   checkMilestones();
 
+  // Check tutorial conditions
+  checkTutorialCondition();
+
   // Update UI
   updateUI();
 }
@@ -2200,6 +2359,203 @@ let lastTickTime = 0;
 let floorShowMaxRates = false;
 let codexShowLocked = false;
 let codexSearch = '';
+let tutorialActive = false;
+let tutorialStep = 0;
+
+// ═══════════════════════════════════════════════
+// TUTORIAL SYSTEM
+// ═══════════════════════════════════════════════
+
+const TUTORIAL_STEPS = [
+  {
+    title: 'Welcome to OK Factory',
+    text: `You're the new operator of a fledgling factory. Your job: <strong>mine raw materials</strong>, <strong>process them</strong>, and <strong>build your way up</strong> to an industrial empire.<br><br>This quick walkthrough will get your first production line running. Takes about 60 seconds.`,
+    action: null,
+    spotlight: null,
+  },
+  {
+    title: 'Power — The Lifeblood',
+    text: `Every machine needs <strong>power</strong> to run. Right now you have none. See that <strong>CRANK</strong> button in the top-right? That's your manual generator.<br><br>Click <strong>CRANK</strong> a few times to build up some reserve power. You'll need at least <strong>15 MW</strong> to run your first machines.`,
+    action: 'waitForPower',
+    spotlight: '.crank-btn',
+  },
+  {
+    title: 'The Factory Floor',
+    text: `Good — you've got power stored. Now let's build something with it.<br><br>Click <strong>Factory Floors</strong> in the sidebar to see your production slots.`,
+    action: 'waitForPage:floors',
+    spotlight: '.nav-item[data-page="floors"]',
+  },
+  {
+    title: 'Place a Miner',
+    text: `See those empty <code>+ Add Machine</code> slots? Click the <strong>first slot</strong> to configure it.<br><br>Set the machine to <strong>Miner Mk.I</strong> and the recipe to <strong>Mine Iron Ore</strong>, then hit <strong>Save</strong>.`,
+    action: 'waitForMachine:miner_mk1',
+    spotlight: null,
+    spotlightFn: () => document.querySelector('.machine-slot'),
+  },
+  {
+    title: 'Place a Smelter',
+    text: `Your miner is pulling iron ore out of the ground. Now you need to smelt it into ingots.<br><br>Click the <strong>second slot</strong> and set it to <strong>Smelter</strong> with the recipe <strong>Smelt Iron</strong>.`,
+    action: 'waitForMachine:smelter',
+    spotlight: null,
+    spotlightFn: () => document.querySelectorAll('.machine-slot')[1],
+  },
+  {
+    title: 'Place a Constructor',
+    text: `Almost there! The constructor turns ingots into useful <strong>plates</strong>.<br><br>Click the <strong>third slot</strong>: set it to <strong>Constructor</strong> with recipe <strong>Make Iron Plate</strong>.`,
+    action: 'waitForMachine:constructor',
+    spotlight: null,
+    spotlightFn: () => document.querySelectorAll('.machine-slot')[2],
+  },
+  {
+    title: 'Your First Production Line!',
+    text: `Iron Ore → Iron Ingot → <strong>Iron Plate</strong>. That's a complete production chain! Watch the rates update on your floor — resources are flowing.<br><br>Keep an eye on power. When it runs low, <strong>CRANK</strong> to top it up. Later, you'll research <strong>coal generators</strong> to automate power.`,
+    action: null,
+    spotlight: null,
+  },
+  {
+    title: 'What\'s Next',
+    text: `<strong>Dashboard</strong> — overview of production rates and net worth<br><strong>Research Lab</strong> — unlock new machines, recipes, and upgrades<br><strong>Storage Vault</strong> — see all your stockpiled resources<br><strong>Power Grid</strong> — monitor supply/demand and crank power<br><strong>Recipe Codex</strong> — reference for all recipes<br><strong>Milestones</strong> — hidden achievements with permanent bonuses<br><br>Explore, experiment, and scale up. Good luck, operator.`,
+    action: null,
+    spotlight: '#sidebar',
+  },
+];
+
+function startTutorial() {
+  tutorialActive = true;
+  tutorialStep = 0;
+  renderTutorial();
+}
+
+function endTutorial() {
+  tutorialActive = false;
+  const overlay = document.getElementById('tutorial-overlay');
+  overlay.classList.remove('active');
+  overlay.innerHTML = '';
+  gameState.tutorialDone = true;
+  autoSave();
+}
+
+function nextTutorialStep() {
+  tutorialStep++;
+  if (tutorialStep >= TUTORIAL_STEPS.length) {
+    endTutorial();
+    toast('Tutorial complete — happy building!', 'success');
+    return;
+  }
+  renderTutorial();
+}
+
+function prevTutorialStep() {
+  if (tutorialStep > 0) {
+    tutorialStep--;
+    renderTutorial();
+  }
+}
+
+function renderTutorial() {
+  const overlay = document.getElementById('tutorial-overlay');
+  if (!tutorialActive) { overlay.classList.remove('active'); overlay.innerHTML = ''; return; }
+  overlay.classList.add('active');
+
+  const step = TUTORIAL_STEPS[tutorialStep];
+  const total = TUTORIAL_STEPS.length;
+  const isFirst = tutorialStep === 0;
+  const isLast = tutorialStep === total - 1;
+  const isWaiting = !!step.action;
+
+  // Allow clicks through to game UI when waiting for player action
+  if (isWaiting) {
+    overlay.classList.add('passthrough');
+  } else {
+    overlay.classList.remove('passthrough');
+  }
+
+  const dots = TUTORIAL_STEPS.map((_, i) => {
+    const cls = i < tutorialStep ? 'filled' : i === tutorialStep ? 'current' : '';
+    return `<div class="tutorial-dot ${cls}"></div>`;
+  }).join('');
+
+  const nextLabel = isLast ? 'FINISH' : 'NEXT →';
+  const nextBtn = isWaiting
+    ? `<button class="btn btn-sm" disabled style="opacity:0.35;">${nextLabel}</button>`
+    : `<button class="btn btn-primary btn-sm" onclick="nextTutorialStep()">${nextLabel}</button>`;
+
+  overlay.innerHTML = `
+    <div class="tutorial-backdrop"></div>
+    <div class="tutorial-card">
+      <div class="tutorial-card-header">
+        <span class="tutorial-step-label">Step ${tutorialStep + 1} / ${total}</span>
+        <button class="tutorial-skip" onclick="endTutorial()">Skip tutorial</button>
+      </div>
+      <div class="tutorial-card-body">
+        <div class="tutorial-title">${step.title}</div>
+        <div class="tutorial-text">${step.text}</div>
+      </div>
+      <div class="tutorial-card-footer">
+        <div class="tutorial-dots">${dots}</div>
+        <div class="tutorial-actions">
+          ${!isFirst ? '<button class="btn btn-sm" onclick="prevTutorialStep()">← BACK</button>' : ''}
+          ${nextBtn}
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Spotlight
+  updateTutorialSpotlight(step);
+}
+
+function updateTutorialSpotlight(step) {
+  // Remove old spotlight
+  document.querySelectorAll('.tutorial-spotlight').forEach(el => el.remove());
+
+  let target = null;
+  if (step.spotlightFn) {
+    try { target = step.spotlightFn(); } catch(e) {}
+  } else if (step.spotlight) {
+    target = document.querySelector(step.spotlight);
+  }
+
+  if (target) {
+    const rect = target.getBoundingClientRect();
+    const pad = 6;
+    const sp = document.createElement('div');
+    sp.className = 'tutorial-spotlight';
+    sp.style.left   = (rect.left - pad) + 'px';
+    sp.style.top    = (rect.top - pad) + 'px';
+    sp.style.width  = (rect.width + pad * 2) + 'px';
+    sp.style.height = (rect.height + pad * 2) + 'px';
+    document.body.appendChild(sp);
+  }
+}
+
+function checkTutorialCondition() {
+  if (!tutorialActive) return;
+  const step = TUTORIAL_STEPS[tutorialStep];
+  if (!step || !step.action) return;
+
+  let satisfied = false;
+
+  if (step.action === 'waitForPower') {
+    satisfied = gameState.manualPower >= 13;
+  } else if (step.action.startsWith('waitForPage:')) {
+    const targetPage = step.action.split(':')[1];
+    satisfied = currentPage === targetPage;
+  } else if (step.action.startsWith('waitForMachine:')) {
+    const targetMachine = step.action.split(':')[1];
+    const floor = gameState.floors[currentFloor];
+    if (floor) {
+      satisfied = floor.slots.some(s => s.machine === targetMachine && s.recipe);
+    }
+  }
+
+  if (satisfied) {
+    nextTutorialStep();
+  } else {
+    // Re-render spotlight in case DOM changed
+    updateTutorialSpotlight(step);
+  }
+}
 
 function toggleFloorRates() {
   floorShowMaxRates = !floorShowMaxRates;
@@ -2213,6 +2569,7 @@ function startGame(resume) {
   } else {
     gameState = newGameState();
   }
+  const isNewRun = !resume || typeof resume !== 'object';
   document.getElementById('intro-screen').classList.add('fade-out');
   setTimeout(() => {
     document.getElementById('intro-screen').style.display = 'none';
@@ -2220,6 +2577,10 @@ function startGame(resume) {
     renderCurrentPage();
     lastTickTime = Date.now();
     gameInterval = setInterval(gameTick, 1000);
+    // Start tutorial for new games that haven't completed it
+    if (isNewRun && !gameState.tutorialDone) {
+      startTutorial();
+    }
   }, 800);
 }
 
@@ -2230,6 +2591,7 @@ function switchPage(page) {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
   document.getElementById(`page-${page}`)?.classList.add('active');
   renderCurrentPage();
+  checkTutorialCondition();
 }
 
 function renderCurrentPage() {
@@ -2948,6 +3310,7 @@ function saveSlot(floorIdx, slotIdx) {
   closeModal();
   renderFloors();
   toast('Slot configured!', 'success');
+  checkTutorialCondition();
 }
 
 function removeSlot(floorIdx, slotIdx) {
@@ -3409,6 +3772,7 @@ function crankManualPower() {
     setTimeout(() => flash.remove(), 400);
   }
   updateManualPowerUI();
+  checkTutorialCondition();
 }
 
 function getCrankStats() {
@@ -3997,6 +4361,7 @@ function doNewRun() {
   gameState.milestoneBonus = prevMilestoneBonus;
   gameState.extraFloorChance = prevExtraFloorChance;
   gameState.bonusStartPower = prevBonusStartPower;
+  gameState.tutorialDone = true; // veterans don't need the tutorial again
 
   // Apply extra floor chance reward
   if (prevExtraFloorChance > 0 && Math.random() < prevExtraFloorChance) {

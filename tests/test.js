@@ -103,6 +103,8 @@ const wrapped = `
   function updateManualPowerUI() {}
   function offerChallenge() {}
   function launchChallenge() {}
+  function checkTutorialCondition() {}
+  function updateTutorialSpotlight() {}
 
   ${src}
 
