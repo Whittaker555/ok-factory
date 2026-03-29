@@ -869,6 +869,31 @@ select option { background: var(--bg-raised); color: var(--text); }
   background: rgba(239,68,68,0.1);
 }
 
+.share-btn {
+  background: rgba(99,102,241,0.12);
+  border: 1px solid rgba(99,102,241,0.3);
+  color: #818cf8;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+  white-space: nowrap;
+}
+.share-btn:hover {
+  background: #818cf8;
+  border-color: #818cf8;
+  color: #09090b;
+}
+.share-btn:active {
+  transform: scale(0.93);
+}
+
 @keyframes crankPulse {
   0%, 100% { transform: scale(1); border-color: var(--red); }
   50% { transform: scale(1.06); border-color: #ff6666; }
@@ -1445,6 +1470,7 @@ select option { background: var(--bg-raised); color: var(--text); }
         <div class="value net-worth" id="stat-networth">0</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-left:8px;border-left:1px solid var(--border);padding-left:16px;">
+        <button class="share-btn" onclick="shareFactory()" title="Copy invite link to clipboard">📤 SHARE</button>
         <button class="crank-btn" onclick="crankManualPower()" title="Click to generate manual power!">⚡ CRANK</button>
         <div class="manual-power-indicator">
           <span id="manual-mw">0</span>MW
@@ -1885,6 +1911,11 @@ const MILESTONES = [
   { id: 'm21', name: 'Dedicated Operator',   desc: 'Complete 10 power surges',        check: s => s.challengesSolved >= 10, reward: 'bonus_start_power', rewardVal: 50 },
   { id: 'm22', name: 'Surge Veteran',        desc: 'Complete 25 power surges',        check: s => s.challengesSolved >= 25, reward: 'extra_floor_chance', rewardVal: 0.02 },
   { id: 'm23', name: 'Surge Master',         desc: 'Complete 50 power surges',        check: s => s.challengesSolved >= 50, reward: 'efficiency', rewardVal: 0.04 },
+  // Invite milestones
+  { id: 'm24', name: 'First Invite',          desc: 'Share your factory once',           check: s => s.invitesSent >= 1, reward: 'efficiency', rewardVal: 0.01 },
+  { id: 'm25', name: 'Recruiter',             desc: 'Share your factory 10 times',       check: s => s.invitesSent >= 10, reward: 'efficiency', rewardVal: 0.02 },
+  { id: 'm26', name: 'Influencer',            desc: 'Share your factory 100 times',      check: s => s.invitesSent >= 100, reward: 'efficiency', rewardVal: 0.03 },
+  { id: 'm27', name: 'Viral Mogul',           desc: 'Share your factory 1,000 times',    check: s => s.invitesSent >= 1000, reward: 'efficiency', rewardVal: 0.05 },
 ];
 
 
@@ -1937,6 +1968,7 @@ function newGameState() {
     extraFloorChance: 0,   // % chance of bonus floor on new run (from milestones)
     bonusStartPower: 0,    // bonus MW on new run (from milestones)
     tutorialDone: false,   // has the player completed or skipped the tutorial
+    invitesSent: 0,        // number of times share link was copied
   };
 }
 
@@ -2359,6 +2391,7 @@ function getStats() {
     hasBuilt: gameState.hasBuilt,
     allResearchDone,
     challengesSolved: gameState.challengesSolved,
+    invitesSent: gameState.invitesSent || 0,
   };
 }
 
@@ -3779,6 +3812,21 @@ function renderMilestones() {
 let activeChallengeData = null;
 let challengeInterval = null;
 
+function shareFactory() {
+  if (!gameState) return;
+  const stats = getStats();
+  const nw = Math.round(stats.netWorth);
+  const bid = getBrowserId();
+  const url = `${window.location.origin}${window.location.pathname}?ref=${encodeURIComponent(bid)}&nw=${nw}`;
+  navigator.clipboard.writeText(url).then(() => {
+    gameState.invitesSent = (gameState.invitesSent || 0) + 1;
+    toast(`Link copied! Net worth: ${formatNum(nw)}`, 'success');
+    checkMilestones();
+  }).catch(() => {
+    toast('Could not copy link — try again', 'warn');
+  });
+}
+
 function crankManualPower() {
   if (!gameState) return;
   const stats = getCrankStats();
@@ -4489,6 +4537,30 @@ window.addEventListener('beforeunload', (e) => {
       }
     }
   } catch (e) { /* ignore parse errors */ }
+})();
+
+// Handle referral links: ?ref=<bid>&nw=<netWorth>
+(function handleReferral() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    const nw = params.get('nw');
+    if (ref) {
+      // Clean URL without reloading
+      window.history.replaceState({}, '', window.location.pathname);
+      // Show referral banner on intro screen
+      const intro = document.getElementById('intro-screen');
+      if (intro) {
+        const banner = document.createElement('div');
+        banner.style.cssText = 'background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);border-radius:3px;padding:12px 24px;margin-bottom:16px;font-family:var(--font-mono);font-size:11px;color:#818cf8;text-align:center;';
+        const nwNum = parseInt(nw, 10);
+        const nwText = nwNum > 0 ? ` Their net worth: <span style="color:#a5b4fc;font-weight:700;">${formatNum(nwNum)}</span>` : '';
+        banner.innerHTML = `<span style="font-size:14px;">🏭</span> You were invited by a fellow factory operator!${nwText}`;
+        const btns = document.getElementById('intro-buttons');
+        if (btns && btns.parentNode) btns.parentNode.insertBefore(banner, btns);
+      }
+    }
+  } catch(e) {}
 })();
 
 // On load: check for existing save and show continue button

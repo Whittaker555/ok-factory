@@ -1162,6 +1162,51 @@ T.group('Save/Load — new milestone reward fields', () => {
   });
 });
 
+// ─── Share / Invite milestones ───────────────────────────────
+
+T.group('Share / Invite milestones', () => {
+  T.test('invite milestones exist for 1, 10, 100, 1000', () => {
+    const thresholds = [1, 10, 100, 1000];
+    for (const t of thresholds) {
+      const m = G.MILESTONES.find(m => m.check({ invitesSent: t, totalProduced: {} }));
+      assert(m, `milestone should trigger at ${t} invites`);
+    }
+  });
+
+  T.test('invitesSent defaults to 0 in newGameState', () => {
+    const s = G.newGameState();
+    assert.strictEqual(s.invitesSent, 0);
+  });
+
+  T.test('getStats includes invitesSent', () => {
+    const s = freshState();
+    s.invitesSent = 42;
+    const stats = G.getStats();
+    assert.strictEqual(stats.invitesSent, 42);
+  });
+
+  T.test('round-trip preserves invitesSent', () => {
+    const s = freshState();
+    s.invitesSent = 7;
+    const back = G.deserializeState(G.serializeState(s));
+    assert.strictEqual(back.invitesSent, 7);
+  });
+
+  T.test('old saves without invitesSent get default 0', () => {
+    const partial = { tick: 5, storage: {}, unlockedRecipes: [], unlockedMachines: [], completedMilestones: [] };
+    const back = G.deserializeState(partial);
+    assert.strictEqual(back.invitesSent, 0);
+  });
+
+  T.test('checkMilestones awards First Invite at 1 share', () => {
+    const s = freshState();
+    s.invitesSent = 1;
+    // Need power supply so milestone check runs (some milestones check powerSupply)
+    G.checkMilestones();
+    assert(s.completedMilestones.has('m24'), 'First Invite milestone should be awarded');
+  });
+});
+
 // ═══════════════════════════════════════════════════════════════
 // RUN
 // ═══════════════════════════════════════════════════════════════
