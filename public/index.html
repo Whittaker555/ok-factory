@@ -1248,12 +1248,14 @@ select option { background: var(--bg-raised); color: var(--text); }
 #tutorial-overlay.active { opacity: 1; pointer-events: auto; }
 #tutorial-overlay.active .tutorial-backdrop { pointer-events: auto; }
 #tutorial-overlay.active.passthrough .tutorial-backdrop { pointer-events: none; }
+#tutorial-overlay.has-spotlight .tutorial-backdrop { background: transparent; backdrop-filter: none; }
 
 .tutorial-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(2px);
+  transition: background 0.3s;
 }
 
 .tutorial-card {
@@ -2429,8 +2431,9 @@ function startTutorial() {
 function endTutorial() {
   tutorialActive = false;
   const overlay = document.getElementById('tutorial-overlay');
-  overlay.classList.remove('active');
+  overlay.classList.remove('active', 'passthrough', 'has-spotlight');
   overlay.innerHTML = '';
+  document.querySelectorAll('.tutorial-spotlight').forEach(el => el.remove());
   gameState.tutorialDone = true;
   autoSave();
 }
@@ -2508,6 +2511,7 @@ function renderTutorial() {
 function updateTutorialSpotlight(step) {
   // Remove old spotlight
   document.querySelectorAll('.tutorial-spotlight').forEach(el => el.remove());
+  const overlay = document.getElementById('tutorial-overlay');
 
   let target = null;
   if (step.spotlightFn) {
@@ -2517,6 +2521,7 @@ function updateTutorialSpotlight(step) {
   }
 
   if (target) {
+    overlay.classList.add('has-spotlight');
     const rect = target.getBoundingClientRect();
     const pad = 6;
     const sp = document.createElement('div');
@@ -2526,6 +2531,8 @@ function updateTutorialSpotlight(step) {
     sp.style.width  = (rect.width + pad * 2) + 'px';
     sp.style.height = (rect.height + pad * 2) + 'px';
     document.body.appendChild(sp);
+  } else {
+    overlay.classList.remove('has-spotlight');
   }
 }
 
