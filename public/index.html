@@ -1913,7 +1913,7 @@ select option { background: var(--bg-raised); color: var(--text); }
 </div>
 
 <!-- MOBILE BOTTOM NAV -->
-<nav id="bottom-nav">
+<nav id="bottom-nav" style="display:none;">
   <div class="bnav-item active" data-page="dashboard">
     <span class="bnav-icon">📊</span>
     <span class="bnav-label">Dash</span>
@@ -2907,9 +2907,10 @@ const TUTORIAL_STEPS = [
   },
   {
     title: 'The Factory Floor',
-    text: `Good — you've got power stored. Now let's build something with it.<br><br>Click <strong>Factories</strong> in the sidebar to see your production slots.`,
+    text: `Good — you've got power stored. Now let's build something with it.<br><br>Click <strong>Factories</strong> to see your production slots.`,
     action: 'waitForPage:floors',
-    spotlight: '.nav-item[data-page="floors"]',
+    spotlight: null,
+    spotlightFn: () => document.querySelector('.bnav-item[data-page="floors"]') || document.querySelector('.nav-item[data-page="floors"]'),
   },
   {
     title: 'Place a Miner',
@@ -2942,7 +2943,10 @@ const TUTORIAL_STEPS = [
     title: 'What\'s Next',
     text: `<strong>Dashboard</strong> — overview of production rates and net worth<br><strong>Research Lab</strong> — unlock new machines, recipes, and upgrades<br><strong>Storage Vault</strong> — see all your stockpiled resources<br><strong>Power Grid</strong> — monitor supply/demand and crank power<br><strong>Recipe Codex</strong> — reference for all recipes<br><strong>Milestones</strong> — hidden achievements with permanent bonuses<br><br>Explore, experiment, and scale up. Good luck, operator.`,
     action: null,
-    spotlight: '#sidebar',
+    spotlight: null,
+    spotlightFn: () => document.getElementById('bottom-nav')?.offsetParent !== null
+      ? document.getElementById('bottom-nav')
+      : document.getElementById('sidebar'),
   },
 ];
 
@@ -3105,6 +3109,7 @@ function startGame(resume) {
   setTimeout(() => {
     document.getElementById('intro-screen').style.display = 'none';
     document.getElementById('app').style.display = 'grid';
+    document.getElementById('bottom-nav').style.display = '';
     renderCurrentPage();
     lastTickTime = Date.now();
     gameInterval = setInterval(gameTick, 1000);
