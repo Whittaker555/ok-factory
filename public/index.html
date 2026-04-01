@@ -3650,7 +3650,7 @@ function renderDashboard() {
     <div class="grid-3" style="margin-bottom: 16px;">
       <div class="card glow-amber">
         <div class="card-title" style="color:var(--amber);font-size:11px;margin-bottom:8px;">NET WORTH</div>
-        <div style="font-family:var(--font-mono);font-size:28px;color:var(--amber);font-weight:700;font-variant-numeric:tabular-nums;">
+        <div style="font-family:var(--font-mono);font-size:28px;color:var(--amber);font-weight:700;font-variant-numeric:tabular-nums;" title="£${stats.netWorth.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}">
           ${formatNum(Math.round(stats.netWorth))}
         </div>
         <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:4px;">
