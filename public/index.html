@@ -688,6 +688,10 @@ select option { background: var(--bg-raised); color: var(--text); }
   align-items: stretch;
 }
 
+.machine-slot.filled.slot-flowing { border-left-color: var(--green); border-left-width: 3px; }
+.machine-slot.filled.slot-low     { border-left-color: var(--orange); border-left-width: 3px; }
+.machine-slot.filled.slot-starved { border-left-color: var(--red);    border-left-width: 3px; }
+
 .machine-slot.filled .slot-header {
   display: flex;
   justify-content: space-between;
@@ -3926,8 +3930,15 @@ function renderFloors() {
     else if (eff < 0.75) effClass = 'eff-50';
     else if (eff < 1) effClass = 'eff-75';
 
+    let slotStatusClass = '';
+    if (recipe) {
+      if (starved) slotStatusClass = 'slot-starved';
+      else if (resourceEff < 1) slotStatusClass = 'slot-low';
+      else slotStatusClass = 'slot-flowing';
+    }
+
     return `
-      <div class="machine-slot filled">
+      <div class="machine-slot filled ${slotStatusClass}">
         <div class="slot-header">
           <span class="slot-name">${escapeHtml(machine.name)}</span>
           <div style="display:flex;gap:4px;">

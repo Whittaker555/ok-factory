@@ -1,0 +1,5 @@
+- when you hover over the factories tabs it will show an overlay of what that row is outputting, but if if something is net even within this floor it isnt shown
+- if a record is being researched it shouldnt show the required resources as they are technically already spent
+- if you hover over your total money it shows you the full number to the penny 
+- visual for all resources in your collection
+- clearer indications of what each machine is consuming (inputs) and producing (outputs) — currently the pills exist but could be more visually distinct, e.g. separate IN/OUT sections with icons, per-input starvation highlighting, or a mini flow diagram
