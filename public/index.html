@@ -2545,15 +2545,17 @@ function getMaxClockSpeed() {
   return 1.0;
 }
 
-function computePower() {
+// Pure helper — accepts any state-shaped object (gameState or a raw save).
+function computePowerFromState(state) {
   let generatorSupply = 0;
   let demand = 0;
 
-  for (const floor of gameState.floors) {
+  for (const floor of state.floors) {
     if (!floor.unlocked) continue;
     for (const slot of floor.slots) {
       if (!slot.machine || !slot.active) continue;
       const machine = MACHINES[slot.machine];
+      if (!machine) continue;
       if (machine.power < 0) {
         // Generator — only count if it has a recipe with fuel
         if (slot.recipe) {
@@ -2568,12 +2570,16 @@ function computePower() {
   }
 
   // Manual/challenge power only covers the deficit — generators are used first
-  const manualAvailable = (gameState.manualPower || 0) + (gameState.challengePower || 0);
+  const manualAvailable = (state.manualPower || 0) + (state.challengePower || 0);
   const deficit = Math.max(0, demand - generatorSupply);
   const manualUsed = Math.min(manualAvailable, deficit);
   const supply = generatorSupply + manualUsed;
 
   return { supply, demand, generatorSupply, manualUsed };
+}
+
+function computePower() {
+  return computePowerFromState(gameState);
 }
 
 function computeEfficiency() {
@@ -2644,7 +2650,7 @@ function gameTickInner(dt) {
         const needed = (amount / recipe.time) * effectiveRate * dt;
         if ((gameState.storage[res] || 0) < needed) {
           canProduce = false;
-          gameState.alerts.push({ type: 'warn', msg: `${MACHINES[slot.machine].name} starved: need ${RESOURCES[res].name}` });
+          gameState.alerts.push({ type: 'warn', msg: `${(MACHINES[slot.machine] || {name: slot.machine}).name} starved: need ${RESOURCES[res].name}` });
           break;
         }
       }
@@ -2694,6 +2700,135 @@ function gameTickInner(dt) {
   updateUI();
 }
 
+// Batch catch-up: compute offline production in O(slots) instead of O(slots × ticks).
+// NOTE: This is an approximation — resources produced by one slot during the batch
+// are not available to feed downstream slots until the batch completes. This is
+// intentional; offline batching is inherently approximate and avoids browser freezes.
+function gameTickBatchCatchUp(dt) {
+  // Cap to 1 hour of ticks (matching the original loop cap)
+  const chunks = Math.min(Math.floor(dt), 3600);
+  const chunkSize = dt / chunks; // typically 1.0 for dt <= 3600, or dt/3600 for longer gaps
+
+  const efficiency = computeEfficiency();
+  const allRecipes = getAllRecipes();
+
+  // --- Manual power: drain proportional to usage over the whole batch ---
+  const { manualUsed } = computePower();
+  if (gameState.manualPower > 0 && manualUsed > 0) {
+    const totalDrain = 2 * chunkSize * chunks; // 2 MW/s drain rate × total seconds
+    gameState.manualPower = Math.max(0, gameState.manualPower - totalDrain);
+  }
+
+  // --- Challenge timers: decay by total elapsed time ---
+  const totalSecs = chunkSize * chunks;
+  if (gameState.challengePowerTimer > 0) {
+    gameState.challengePowerTimer = Math.max(0, gameState.challengePowerTimer - totalSecs);
+    if (gameState.challengePowerTimer <= 0) {
+      gameState.challengePower = 0;
+      gameState.challengePowerTimer = 0;
+    }
+  }
+  if (gameState.challengeEffTimer > 0) {
+    gameState.challengeEffTimer = Math.max(0, gameState.challengeEffTimer - totalSecs);
+    if (gameState.challengeEffTimer <= 0) {
+      gameState.challengeEffBonus = 0;
+      gameState.challengeEffTimer = 0;
+    }
+  }
+
+  // --- Snapshot storage before batch (so slots don't feed each other mid-batch) ---
+  const storageSnapshot = Object.assign({}, gameState.storage);
+
+  // Track net deltas to apply after all slots are evaluated
+  const storageDelta = {};
+
+  gameState.alerts = [];
+
+  for (const floor of gameState.floors) {
+    if (!floor.unlocked) continue;
+    for (const slot of floor.slots) {
+      if (!slot.machine || !slot.recipe || !slot.active) continue;
+
+      const recipe = allRecipes[slot.recipe];
+      if (!recipe) continue;
+
+      const effectiveRate = efficiency * slot.clockSpeed;
+
+      // Amount consumed/produced per chunk-tick for this slot
+      // perTick = (amount / recipe.time) * effectiveRate * chunkSize
+      // Over `chunks` ticks total = perTick * chunks
+
+      // Determine how many ticks this slot can actually run, limited by
+      // available inputs from the pre-batch snapshot.
+      let runnableTicks = chunks;
+      for (const [res, amount] of Object.entries(recipe.inputs)) {
+        const perTick = (amount / recipe.time) * effectiveRate * chunkSize;
+        if (perTick > 0) {
+          const available = (storageSnapshot[res] || 0) + (storageDelta[res] || 0);
+          // Use snapshot only (no intra-batch chaining) — storageDelta contributions
+          // from other slots are intentionally ignored here (approximation comment above)
+          const maxTicksFromInput = Math.floor((storageSnapshot[res] || 0) / perTick);
+          runnableTicks = Math.min(runnableTicks, maxTicksFromInput);
+        }
+      }
+
+      slot._produced = runnableTicks > 0;
+
+      if (runnableTicks > 0) {
+        // Consume inputs
+        for (const [res, amount] of Object.entries(recipe.inputs)) {
+          const totalConsume = (amount / recipe.time) * effectiveRate * chunkSize * runnableTicks;
+          storageDelta[res] = (storageDelta[res] || 0) - totalConsume;
+        }
+        // Produce outputs
+        for (const [res, amount] of Object.entries(recipe.outputs)) {
+          const totalProduce = (amount / recipe.time) * effectiveRate * chunkSize * runnableTicks;
+          storageDelta[res] = (storageDelta[res] || 0) + totalProduce;
+          gameState.totalProduced[res] = (gameState.totalProduced[res] || 0) + totalProduce;
+        }
+      } else if (Object.keys(recipe.inputs).length > 0) {
+        // Starved — find which input is missing
+        for (const [res] of Object.entries(recipe.inputs)) {
+          if ((storageSnapshot[res] || 0) < 0.001) {
+            gameState.alerts.push({ type: 'warn', msg: `${(MACHINES[slot.machine] || {name: slot.machine}).name} starved: need ${RESOURCES[res].name}` });
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // Apply all storage deltas in one pass
+  for (const [res, delta] of Object.entries(storageDelta)) {
+    gameState.storage[res] = Math.max(0, (gameState.storage[res] || 0) + delta);
+  }
+
+  // Clamp storage to 0 minimum
+  for (const key of Object.keys(gameState.storage)) {
+    if (gameState.storage[key] < 0) gameState.storage[key] = 0;
+  }
+
+  // --- Research progress: advance by full elapsed time ---
+  if (gameState.activeResearch) {
+    const research = RESEARCH[gameState.activeResearch];
+    if (research) {
+      gameState.researchProgress += (100 / research.time) * totalSecs;
+      if (gameState.researchProgress >= 100) {
+        completeResearch(gameState.activeResearch);
+      }
+    }
+  }
+
+  // Advance tick counter by number of chunks processed
+  gameState.tick += chunks;
+
+  // Run end-of-batch housekeeping once
+  autoSave();
+  checkMilestones();
+  checkTutorialCondition();
+  updateUI();
+}
+
 function gameTick() {
   const now = Date.now();
   const elapsed = lastTickTime ? (now - lastTickTime) / 1000 : 1;
@@ -2706,13 +2841,8 @@ function gameTick() {
     // Normal tick or minor throttle — single tick with dt
     gameTickInner(dt);
   } else {
-    // Background catch-up: simulate in 1-second chunks for accuracy
-    // but cap iterations to avoid freezing the browser
-    const chunks = Math.min(Math.floor(dt), 3600);
-    const chunkSize = dt / chunks;
-    for (let i = 0; i < chunks; i++) {
-      gameTickInner(chunkSize);
-    }
+    // Background catch-up: batch calculation in O(slots) instead of O(slots × ticks)
+    gameTickBatchCatchUp(dt);
     toast(`⚡ Caught up ${Math.round(dt / 60)} minutes of offline production!`, 'success');
   }
 }
@@ -3623,6 +3753,15 @@ function renderFloors() {
     }
 
     const machine = MACHINES[slot.machine];
+    if (!machine) {
+      // Machine type no longer exists (stale save) — render as unconfigured slot
+      return `
+        <div class="machine-slot" onclick="openSlotModal(${currentFloor}, ${i})">
+          <div class="empty-label">⚠</div>
+          <div class="empty-text" style="color:var(--red);">Unknown Machine</div>
+        </div>
+      `;
+    }
     const recipe = slot.recipe ? allRecipes[slot.recipe] : null;
     const powerEff = efficiency * slot.clockSpeed;
 
@@ -3753,7 +3892,7 @@ function openSlotModal(floorIdx, slotIdx) {
   const floor = gameState.floors[floorIdx];
   const slot = floor.slots[slotIdx];
 
-  const machineOptions = [...gameState.unlockedMachines].map(id => {
+  const machineOptions = [...gameState.unlockedMachines].filter(id => !!MACHINES[id]).map(id => {
     const m = MACHINES[id];
     return `<option value="${id}" ${slot.machine === id ? 'selected' : ''}>${m.name} (${m.power < 0 ? '+' + Math.abs(m.power) : m.power} MW)</option>`;
   }).join('');
@@ -3873,6 +4012,18 @@ function saveSlot(floorIdx, slotIdx) {
   const machineId = document.getElementById('modal-machine').value;
   const recipeId = document.getElementById('modal-recipe').value;
   const clockSpeed = parseFloat(document.getElementById('modal-clock').value) || 1.0;
+
+  // Validate that the selected recipe is compatible with the selected machine.
+  if (machineId && recipeId) {
+    const allRecipes = getAllRecipes();
+    const recipe = allRecipes[recipeId];
+    if (recipe && recipe.machine !== machineId) {
+      const machineName = MACHINES[machineId]?.name || machineId;
+      const recipeMachineName = MACHINES[recipe.machine]?.name || recipe.machine;
+      toast(`Recipe "${recipe.name}" requires a ${recipeMachineName}, not a ${machineName}.`, 'error');
+      return;
+    }
+  }
 
   const slot = gameState.floors[floorIdx].slots[slotIdx];
   slot.machine = machineId || null;
@@ -4072,6 +4223,7 @@ function renderPower() {
       const slot = floor.slots[i];
       if (!slot.machine || !slot.active) continue;
       const machine = MACHINES[slot.machine];
+      if (!machine) continue;
       if (machine.power < 0) {
         generators.push({ floor: floor.name, slot: i, machine, recipe: slot.recipe ? allRecipes[slot.recipe] : null, clockSpeed: slot.clockSpeed });
       } else if (machine.power > 0) {
@@ -4782,7 +4934,9 @@ function formatNum(n) {
   if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
   if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
   if (n >= 1e4) return (n / 1e3).toFixed(1) + 'K';
-  return n.toLocaleString();
+  // Locale-independent formatter: insert commas every 3 digits from the right
+  const str = Math.round(n).toString();
+  return str.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 function escapeHtml(str) {
@@ -5026,23 +5180,10 @@ window.addEventListener('beforeunload', (e) => {
       if (save.state && save.state.floors) {
         let tp = 0;
         const pool = [];
-        let generatorSupply = 0;
-        let demand = 0;
         const allR = Object.assign({}, RECIPES, ALT_RECIPES || {});
         for (const floor of save.state.floors) {
           if (!floor.unlocked) continue;
           for (const slot of floor.slots) {
-            if (!slot.machine) continue;
-            const machine = MACHINES[slot.machine];
-            const cs = slot.clockSpeed || 1;
-            if (machine && slot.active !== false) {
-              if (machine.power < 0) {
-                if (slot.recipe) generatorSupply += Math.abs(machine.power) * cs;
-              } else if (machine.power > 0) {
-                const pm = cs > 1 ? cs * cs : cs;
-                demand += machine.power * pm;
-              }
-            }
             if (!slot.recipe) continue;
             const recipe = allR[slot.recipe];
             if (!recipe) continue;
@@ -5057,10 +5198,8 @@ window.addEventListener('beforeunload', (e) => {
         }
         if (tp > 0) globalRain.throughput = tp;
         if (pool.length > 0) globalRain.colors = pool;
-        // Compute efficiency from power state
-        const manualAvail = (save.state.manualPower || 0) + (save.state.challengePower || 0);
-        const deficit = Math.max(0, demand - generatorSupply);
-        const supply = generatorSupply + Math.min(manualAvail, deficit);
+        // Compute efficiency from power state using the canonical helper
+        const { supply, demand } = computePowerFromState(save.state);
         const powerEff = demand > 0 ? Math.min(1, supply / demand) : 1;
         const milestoneBonus = save.state.milestoneBonus || 0;
         globalRain.efficiency = Math.min(2, powerEff * (1 + milestoneBonus));
