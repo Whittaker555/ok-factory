@@ -3861,6 +3861,24 @@ function renderFloors() {
   }
   const showMax = typeof floorShowMaxRates !== 'undefined' && floorShowMaxRates;
 
+  // Factory-wide net rates (units/tick) — positive = surplus, negative = depleting
+  const factoryNetRates = {};
+  for (const fl of floors) {
+    if (!fl.unlocked) continue;
+    for (const s of fl.slots) {
+      if (!s.machine || !s.recipe || !s.active) continue;
+      const r = allRecipes[s.recipe];
+      if (!r) continue;
+      const rate = efficiency * s.clockSpeed;
+      for (const [res, amt] of Object.entries(r.outputs)) {
+        factoryNetRates[res] = (factoryNetRates[res] || 0) + (amt / r.time) * rate;
+      }
+      for (const [res, amt] of Object.entries(r.inputs)) {
+        factoryNetRates[res] = (factoryNetRates[res] || 0) - (amt / r.time) * rate;
+      }
+    }
+  }
+
   const slotsHtml = floor.slots.map((slot, i) => {
     if (!slot.machine) {
       return `
@@ -3947,14 +3965,14 @@ function renderFloors() {
         const stops = inputEntries.map(([res, amount], idx) => {
           const needed = (amount / recipe.time) * powerEff;
           const available = gameState.storage[res] || 0;
+          const netRate = factoryNetRates[res] || 0;
           let color;
-          if (needed <= 0) {
-            color = 'var(--green)';
+          if (needed > 0 && available < needed) {
+            color = 'var(--red)';    // less than 1 tick of stock — starved now
+          } else if (netRate < -0.001) {
+            color = 'var(--orange)'; // net negative across factory — will deplete
           } else {
-            const ratio = available / needed;
-            if (ratio < 0.01) color = 'var(--red)';
-            else if (ratio < 1) color = 'var(--orange)';
-            else color = 'var(--green)';
+            color = 'var(--green)';  // sustainable
           }
           const start = (idx * segSize).toFixed(1);
           const end = ((idx + 1) * segSize).toFixed(1);
