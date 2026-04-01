@@ -721,11 +721,29 @@ select option { background: var(--bg-raised); color: var(--text); }
   color: var(--amber);
 }
 
-.machine-slot.filled .slot-io {
+.slot-io-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.slot-io-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.slot-io-out {
+  align-items: flex-end;
+}
+
+.slot-io-label {
   font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-dim);
-  margin-top: 4px;
+  font-size: 9px;
+  color: var(--text-dark);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .slot-pill {
@@ -747,7 +765,7 @@ select option { background: var(--bg-raised); color: var(--text); }
 }
 .slot-pill .pill-symbol {
   margin-right: 2px;
-  font-size: 12px;
+  font-size: 10px;
 }
 .pill-swatch {
   display: inline-block;
@@ -3940,15 +3958,21 @@ function renderFloors() {
           const symbol = RESOURCE_SYMBOLS[r] || '';
           const name = res.name || r;
           const rate = ((amt/recipe.time)*displayEff*60).toFixed(1);
-          return `<span class="slot-pill" style="background:${color}22;border-color:${color}66;">` +
+          const label = symbol || name.slice(0, 4);
+          return `<span class="slot-pill" data-tooltip="${name}" style="background:${color}22;border-color:${color}66;">` +
             `<span class="pill-swatch" style="background:${color};box-shadow:0 0 5px ${color}99;outline:1px solid rgba(255,255,255,0.15);"></span>` +
-            `${symbol ? `<span class='pill-symbol'>${symbol}</span>` : ''}${name} <span class="pill-rate">${rate}/min</span>` +
+            `<span class="pill-symbol">${label}</span><span class="pill-rate">${rate}/min</span>` +
             `</span>`;
         };
-        const inputPills = Object.entries(recipe.inputs).map(([r, a]) => pill(r, a, false)).join('');
-        const outputPills = Object.entries(recipe.outputs).map(([r, a]) => pill(r, a, true)).join('');
-        if (inputPills) ioHtml += `<div class="slot-io">IN: ${inputPills}</div>`;
-        if (outputPills) ioHtml += `<div class="slot-io">OUT: ${outputPills}</div>`;
+        const inputPillsArr = Object.entries(recipe.inputs).map(([r, a]) => pill(r, a, false));
+        const outputPillsArr = Object.entries(recipe.outputs).map(([r, a]) => pill(r, a, true));
+        const leftCol = inputPillsArr.length > 0
+          ? `<div class="slot-io-col"><div class="slot-io-label">In</div>${inputPillsArr.map(p => `<div>${p}</div>`).join('')}</div>`
+          : '';
+        const rightCol = outputPillsArr.length > 0
+          ? `<div class="slot-io-col slot-io-out"><div class="slot-io-label">Out</div>${outputPillsArr.map(p => `<div>${p}</div>`).join('')}</div>`
+          : '';
+        if (leftCol || rightCol) ioHtml = `<div class="slot-io-row">${leftCol}${rightCol}</div>`;
     }
 
     if (eff < 0.5) effClass = 'eff-0';
