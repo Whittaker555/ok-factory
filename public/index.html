@@ -613,6 +613,53 @@ select option { background: var(--bg-raised); color: var(--text); }
 .tab-btn:hover { color: var(--text); background: none; border-color: transparent; }
 .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: none; }
 
+/* FLOOR TAB HOVER PANEL */
+.floor-tab-wrap {
+  position: relative;
+  display: inline-block;
+}
+.floor-tab-hover {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-width: 160px;
+  max-width: 240px;
+  z-index: 300;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+.floor-tab-wrap:hover .floor-tab-hover {
+  display: block;
+}
+.floor-tab-hover-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+}
+.floor-tab-hover-row {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  white-space: nowrap;
+  line-height: 1.7;
+}
+.floor-tab-hover-empty {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 /* MACHINE SLOT */
 .machine-slot {
   background: var(--bg-subtle);
@@ -1826,7 +1873,7 @@ select option { background: var(--bg-raised); color: var(--text); }
       </div>
       <div class="topbar-stat">
         <label>Net Worth</label>
-        <div class="value net-worth" id="stat-networth">0</div>
+        <div class="value net-worth" id="stat-networth" title="">0</div>
       </div>
       <div class="topbar-stat">
         <label>£/min</label>
@@ -1871,6 +1918,7 @@ select option { background: var(--bg-raised); color: var(--text); }
       <span class="icon">🏆</span> Milestones
     </div>
     <div style="flex:1;"></div>
+    <div style="padding:8px 16px 4px;font-size:10px;color:var(--text-muted);font-family:var(--font-mono);cursor:pointer;user-select:none;" onclick="showShortcutsModal()">? for shortcuts</div>
     <div class="nav-item" onclick="toggleIdleView()" style="opacity:0.5;font-size:12px;cursor:pointer;">
       <span class="icon">🖥️</span> Idle View
     </div>
@@ -3031,6 +3079,7 @@ function getStats() {
 let currentPage = 'dashboard';
 let currentFloor = 0;
 let hideResearched = false;
+let storageFilter = 'all';
 let gameInterval = null;
 let lastTickTime = 0;
 let floorShowMaxRates = false;
@@ -3303,7 +3352,8 @@ function updateUI() {
   const s = String(Math.floor((elapsed % 60000) / 1000)).padStart(2,'0');
 
   document.getElementById('stat-session').textContent = `${h}:${m}:${s}`;
-  document.getElementById('stat-power').textContent = `${Math.round(stats.powerSupply)} / ${Math.round(stats.powerDemand)} MW`;
+  const _pwrDeficit = stats.powerDemand > 0 && stats.generatorSupply < stats.powerDemand;
+  document.getElementById('stat-power').textContent = `${_pwrDeficit ? '! ' : ''}${Math.round(stats.powerSupply)} / ${Math.round(stats.powerDemand)} MW`;
   const autoEl = document.getElementById('stat-power-auto');
   if (autoEl) {
     const genMW = Math.round(stats.generatorSupply);
@@ -3336,15 +3386,17 @@ function updateUI() {
   }
 
   document.getElementById('stat-throughput').textContent = formatNum(Math.round(stats.totalThroughput));
-  document.getElementById('stat-networth').textContent = formatNum(Math.round(stats.netWorth));
+  const nwEl = document.getElementById('stat-networth');
+  nwEl.textContent = formatNum(Math.round(stats.netWorth));
+  nwEl.title = '£' + stats.netWorth.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   document.getElementById('stat-vpm').textContent = formatNum(Math.round(stats.valuePerMinute));
 
-  // Power color
+  // Power color — based on generator supply vs demand (manual cranking excluded so a real deficit is always visible)
   const powerEl = document.getElementById('stat-power');
   powerEl.className = 'value';
-  if (stats.powerDemand === 0 || stats.powerSupply >= stats.powerDemand) {
+  if (stats.powerDemand === 0 || stats.generatorSupply >= stats.powerDemand) {
     powerEl.classList.add('power-ok');
-  } else if (stats.powerSupply >= stats.powerDemand * 0.5) {
+  } else if (stats.generatorSupply >= stats.powerDemand * 0.5) {
     powerEl.classList.add('power-warn');
   } else {
     powerEl.classList.add('power-crit');
@@ -3737,10 +3789,54 @@ function renderFloors() {
   const page = document.getElementById('page-floors');
   const floors = gameState.floors;
 
+  const allRecipes = getAllRecipes();
+  const efficiency = computeEfficiency();
+
   const tabsHtml = floors.map((f, i) => {
     const label = `Factory ${i + 1}`;
     if (!f.unlocked) return `<button class="tab-btn" disabled style="opacity:0.3">🔒 ${label}</button>`;
-    return `<button class="tab-btn ${i === currentFloor ? 'active' : ''}" onclick="switchFloor(${i})">${label}</button>`;
+
+    // Compute per-resource production and consumption rates (per minute) for this floor
+    const prod = {}, cons = {};
+    for (const slot of f.slots) {
+      if (!slot.machine || !slot.recipe || !slot.active) continue;
+      const recipe = allRecipes[slot.recipe];
+      if (!recipe) continue;
+      const rate = efficiency * slot.clockSpeed * 60; // multiplier → per-minute
+      for (const [res, amt] of Object.entries(recipe.outputs)) {
+        prod[res] = (prod[res] || 0) + (amt / recipe.time) * rate;
+      }
+      for (const [res, amt] of Object.entries(recipe.inputs)) {
+        cons[res] = (cons[res] || 0) + (amt / recipe.time) * rate;
+      }
+    }
+
+    // Build hover panel rows
+    const allRes = new Set([...Object.keys(prod), ...Object.keys(cons)]);
+    let rowsHtml = '';
+    for (const res of allRes) {
+      const p = prod[res] || 0;
+      const c = cons[res] || 0;
+      const net = p - c;
+      const resInfo = RESOURCES[res] || {};
+      const name = resInfo.name || res;
+      if (net > 0) {
+        // Surplus
+        rowsHtml += `<div class="floor-tab-hover-row" style="color:var(--green);">+${net.toFixed(1)}/min ${name}</div>`;
+      } else if (net < 0) {
+        // Deficit
+        rowsHtml += `<div class="floor-tab-hover-row" style="color:var(--red);">${net.toFixed(1)}/min ${name}</div>`;
+      } else {
+        // Net-even: only show if both produced and consumed on this floor
+        if (p > 0 && c > 0) {
+          rowsHtml += `<div class="floor-tab-hover-row" style="color:var(--text-dim);">= ${p.toFixed(1)}/min ${name}</div>`;
+        }
+      }
+    }
+    if (!rowsHtml) rowsHtml = `<div class="floor-tab-hover-empty">No active machines</div>`;
+
+    const hoverPanel = `<div class="floor-tab-hover"><div class="floor-tab-hover-title">Resource Rates</div>${rowsHtml}</div>`;
+    return `<div class="floor-tab-wrap"><button class="tab-btn ${i === currentFloor ? 'active' : ''}" onclick="switchFloor(${i})">${label}</button>${hoverPanel}</div>`;
   }).join('');
 
   const floor = floors[currentFloor];
@@ -3749,9 +3845,6 @@ function renderFloors() {
     if (currentFloor < 0) currentFloor = 0;
     return renderFloors();
   }
-
-  const allRecipes = getAllRecipes();
-  const efficiency = computeEfficiency();
   const showMax = typeof floorShowMaxRates !== 'undefined' && floorShowMaxRates;
 
   const slotsHtml = floor.slots.map((slot, i) => {
@@ -3836,6 +3929,7 @@ function renderFloors() {
           <span class="slot-name">${escapeHtml(machine.name)}</span>
           <div style="display:flex;gap:4px;">
             <button class="btn btn-sm" onclick="openSlotModal(${currentFloor}, ${i})" title="Configure">⚙</button>
+            ${recipe ? `<button class="btn btn-sm" onclick="event.stopPropagation();copySlot(${currentFloor}, ${i})" title="Copy to next empty slot" style="border-color:#06b6d466;color:var(--cyan);">⧉</button>` : ''}
             <button class="btn btn-sm btn-danger" onclick="removeSlot(${currentFloor}, ${i})" title="Remove">✕</button>
           </div>
         </div>
@@ -4060,6 +4154,31 @@ function removeSlot(floorIdx, slotIdx) {
   renderFloors();
 }
 
+function copySlot(floorIdx, slotIdx) {
+  const src = gameState.floors[floorIdx].slots[slotIdx];
+  if (!src.machine || !src.recipe) return;
+
+  // Build a search order: current floor first, then other unlocked floors
+  const floorOrder = [floorIdx, ...gameState.floors.map((_, i) => i).filter(i => i !== floorIdx && gameState.floors[i].unlocked)];
+
+  for (const fi of floorOrder) {
+    const slots = gameState.floors[fi].slots;
+    const emptyIdx = slots.findIndex(s => !s.machine);
+    if (emptyIdx !== -1) {
+      slots[emptyIdx].machine = src.machine;
+      slots[emptyIdx].recipe = src.recipe;
+      slots[emptyIdx].clockSpeed = src.clockSpeed;
+      autoSave();
+      renderCurrentPage();
+      const dest = fi === floorIdx ? `slot ${emptyIdx + 1}` : `Factory ${fi + 1}, slot ${emptyIdx + 1}`;
+      toast(`Copied to ${dest}`, 'success');
+      return;
+    }
+  }
+
+  toast('No empty slots available', 'error');
+}
+
 // ─── RENDER: RESEARCH LAB ───────────────────────────────────
 function renderResearch() {
   const page = document.getElementById('page-research');
@@ -4107,16 +4226,16 @@ function renderResearch() {
 
       let stateClass = locked ? 'locked' : (completed ? 'completed' : (inProgress ? 'in-progress' : ''));
 
-      const costHtml = Object.entries(research.cost).map(([res, amount]) => {
+      const costHtml = (inProgress || completed) ? '' : Object.entries(research.cost).map(([res, amount]) => {
         const have = Math.floor(gameState.storage[res] || 0);
-        if (inProgress) {
-          // Show resources draining: remaining = cost * (1 - progress/100)
-          const remaining = Math.ceil(amount * (1 - gameState.researchProgress / 100));
-          return `<span style="color:var(--amber);opacity:0.8">${RESOURCES[res]?.name}: <span style="font-variant-numeric:tabular-nums">${formatNum(remaining)}</span>/${formatNum(amount)}</span>`;
-        }
-        const enough = have >= amount || completed;
+        const enough = have >= amount;
         return `<span style="color:${enough ? 'var(--green)' : 'var(--red)'}">${RESOURCES[res]?.name}: ${formatNum(have)}/${formatNum(amount)}</span>`;
       }).join(' · ');
+
+      // Compact cost summary shown on pending cards only (quantity× Name format)
+      const pendingCostLine = (!completed && !inProgress)
+        ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:5px;line-height:1.5;">Costs: ${Object.entries(research.cost).map(([res, amount]) => `${formatNum(amount)}\u00d7 ${RESOURCES[res]?.name || res}`).join(' \u00b7 ')}</div>`
+        : '';
 
       let totalLine = '';
       if (!completed && !inProgress) {
@@ -4136,7 +4255,8 @@ function renderResearch() {
           <div class="rn-tier">Tier ${tier}${research.prereqs.length ? ' · Requires: ' + research.prereqs.map(p => RESEARCH[p]?.name || p).join(', ') : ''}</div>
           <div class="rn-name">${escapeHtml(research.name)}</div>
           <div class="rn-desc">${escapeHtml(research.desc)}</div>
-          <div class="rn-cost">${costHtml}</div>
+          ${pendingCostLine}
+          ${inProgress ? `<div class="rn-cost" style="color:var(--amber);opacity:0.8;">Resources committed</div>` : completed ? '' : `<div class="rn-cost">${costHtml}</div>`}
           ${totalLine}
           ${inProgress ? `<div class="progress-bar" style="margin-top:6px;height:4px;"><div class="progress-fill" style="width:${gameState.researchProgress}%"></div></div>
           <div style="font-family:var(--font-mono);font-size:10px;color:var(--amber);margin-top:3px;">${Math.round(gameState.researchProgress)}% — ~${Math.max(0, Math.round((100 - gameState.researchProgress) / (100 / research.time)))}s</div>` : completed ? '' : `<div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dark);margin-top:4px;">Duration: ${research.time}s</div>`}
@@ -4176,25 +4296,53 @@ function renderStorage() {
     }
   }
 
+  // Classify a resource id for the current filter
+  function matchesFilter(id) {
+    const stored = gameState.storage[id] || 0;
+    const r = rates[id] || { prod: 0, cons: 0 };
+    const net = r.prod - r.cons;
+    if (storageFilter === 'all')      return stored > 0.1 || r.prod > 0 || r.cons > 0;
+    if (storageFilter === 'growing')  return net > 0.001;
+    if (storageFilter === 'shrinking') return net < -0.001;
+    if (storageFilter === 'stable')   return Math.abs(net) <= 0.001 && stored > 0.1;
+    return false;
+  }
+
   const categories = ['ore', 'fluid', 'ingot', 'material', 'part', 'component', 'complex', 'advanced', 'elite'];
   const catNames = { ore: 'Raw Ores', fluid: 'Fluids', ingot: 'Ingots & Refined', material: 'Materials', part: 'Basic Parts', component: 'Components', complex: 'Complex Products', advanced: 'Advanced Products', elite: 'Elite Products' };
+
+  const filterDefs = [
+    { key: 'all',       label: 'All' },
+    { key: 'growing',   label: 'Growing' },
+    { key: 'shrinking', label: 'Shrinking' },
+    { key: 'stable',    label: 'Stable' },
+  ];
+
+  const filterTabsHtml = filterDefs.map(f => `
+    <button class="tab-btn${storageFilter === f.key ? ' active' : ''}"
+      onclick="storageFilter='${f.key}';renderStorage();">${f.label}</button>
+  `).join('');
 
   let html = `
     <div class="page-title">STORAGE VAULT</div>
     <div class="page-subtitle">RESOURCE INVENTORY & FLOW</div>
+    <div class="tab-bar">${filterTabsHtml}</div>
   `;
+
+  let anyVisible = false;
 
   for (const cat of categories) {
     const resources = Object.entries(RESOURCES).filter(([, r]) => r.category === cat);
-    const hasAny = resources.some(([id]) => (gameState.storage[id] || 0) > 0 || rates[id]);
-    if (!hasAny) continue;
+    const visibleRows = resources.filter(([id]) => matchesFilter(id));
+    if (!visibleRows.length) continue;
+    anyVisible = true;
 
     html += `
       <div class="card">
         <div class="card-title" style="margin-bottom:8px;">${catNames[cat] || cat}</div>
         <div class="table-scroll"><table class="data-table">
           <tr><th>Resource</th><th>Tier</th><th>Stored</th><th>Value/unit</th><th>Total Value</th><th>+Prod/min</th><th>-Cons/min</th><th>Net/min</th></tr>
-          ${resources.filter(([id]) => (gameState.storage[id] || 0) > 0.1 || rates[id]).map(([id, res]) => {
+          ${visibleRows.map(([id, res]) => {
             const stored = Math.floor(gameState.storage[id] || 0);
             const r = rates[id] || { prod: 0, cons: 0 };
             const net = r.prod - r.cons;
@@ -4214,6 +4362,10 @@ function renderStorage() {
         </table></div>
       </div>
     `;
+  }
+
+  if (!anyVisible) {
+    html += `<div class="card" style="text-align:center;color:var(--text-dim);padding:32px;">No resources match this filter.</div>`;
   }
 
   page.innerHTML = html;
@@ -4339,6 +4491,16 @@ function renderCodex() {
   try {
   const allRecipes = { ...RECIPES, ...ALT_RECIPES };
 
+  // Build reverse lookup: recipeId → research project name that unlocks it
+  const recipeUnlockedBy = Object.create(null);
+  for (const [, proj] of Object.entries(RESEARCH)) {
+    if (proj.unlocks) {
+      for (const recipeId of proj.unlocks) {
+        if (!recipeUnlockedBy[recipeId]) recipeUnlockedBy[recipeId] = proj.name;
+      }
+    }
+  }
+
   // Group by machine category then machine
   const categories = ['extraction', 'processing', 'production', 'power'];
   const catNames = { extraction: 'Extraction', processing: 'Processing & Refining', production: 'Production & Assembly', power: 'Power Generation' };
@@ -4418,7 +4580,7 @@ function renderCodex() {
               const rateMultiplier = 60 / r.time;
               return `
               <tr style="${!r.unlocked ? 'opacity:0.35;' : ''}">
-                <td class="${r.unlocked ? 'text-bright' : 'text-dim'}">${escapeHtml(r.name)}</td>
+                <td class="${r.unlocked ? 'text-bright' : 'text-dim'}">${escapeHtml(r.name)}${!r.unlocked && recipeUnlockedBy[r.id] ? `<br><span style="color:var(--text-dim);font-size:11px;font-family:var(--font-mono);">Requires: ${escapeHtml(recipeUnlockedBy[r.id])}</span>` : ''}</td>
                 <td class="text-dim">T${r.tier}</td>
                 <td>${Object.entries(r.inputs).length > 0 ? Object.entries(r.inputs).map(([res,a]) =>
                   `<span class="res-icon" style="background:${RESOURCES[res]?.color || '#666'}"></span>${RESOURCES[res]?.name || res}: ${(a * rateMultiplier).toFixed(0)}`
@@ -5395,6 +5557,112 @@ window.addEventListener('beforeunload', (e) => {
     newBtn.style.opacity = '0.6';
   }
 })();
+
+// ── Floor swipe gestures (mobile) ────────────────────────────────────────────
+(function () {
+  let touchStartX = 0;
+  let touchStartY = 0;
+
+  const floorsPage = document.getElementById('page-floors');
+  if (!floorsPage) return;
+
+  floorsPage.addEventListener('touchstart', function (e) {
+    touchStartX = e.changedTouches[0].clientX;
+    touchStartY = e.changedTouches[0].clientY;
+  }, { passive: true });
+
+  floorsPage.addEventListener('touchend', function (e) {
+    if (currentPage !== 'floors') return;
+
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+
+    // Must be a primarily horizontal gesture of at least 50px
+    if (Math.abs(dx) < 50 || Math.abs(dx) <= Math.abs(dy)) return;
+
+    const unlockedFloors = gameState.floors
+      .map((f, i) => ({ f, i }))
+      .filter(({ f }) => f.unlocked)
+      .map(({ i }) => i);
+
+    if (unlockedFloors.length < 2) return;
+
+    const pos = unlockedFloors.indexOf(currentFloor);
+    if (pos === -1) return;
+
+    let nextPos;
+    if (dx < 0) {
+      // Left swipe → next floor (wrap to first)
+      nextPos = (pos + 1) % unlockedFloors.length;
+    } else {
+      // Right swipe → previous floor (wrap to last)
+      nextPos = (pos - 1 + unlockedFloors.length) % unlockedFloors.length;
+    }
+
+    switchFloor(unlockedFloors[nextPos]);
+  }, { passive: true });
+}());
+
+// ── Keyboard shortcuts ────────────────────────────────────────────────────────
+function showShortcutsModal() {
+  showModal(`
+    <h2 style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px;">Keyboard Shortcuts</h2>
+    <table style="width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:12px;">
+      <tbody>
+        ${[
+          ['1', 'Dashboard'],
+          ['2', 'Factories'],
+          ['3', 'Research Lab'],
+          ['4', 'Storage Vault'],
+          ['5', 'Power Grid'],
+          ['6', 'Recipe Codex'],
+          ['7', 'Milestones'],
+          ['C', 'Crank (manual power)'],
+          ['?', 'Show this help'],
+        ].map(([key, label]) => `
+          <tr>
+            <td style="padding:5px 12px 5px 0;white-space:nowrap;">
+              <kbd style="display:inline-block;background:var(--bg-subtle);border:1px solid var(--border-mid);border-radius:3px;padding:2px 8px;font-family:var(--font-mono);font-size:11px;color:var(--accent);min-width:22px;text-align:center;">${key}</kbd>
+            </td>
+            <td style="padding:5px 0;color:var(--text-dim);">${label}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    <button class="btn" onclick="closeModal()" style="margin-top:16px;width:100%;">Close</button>
+  `);
+}
+
+(function initKeyboardShortcuts() {
+  const PAGE_KEYS = { '1': 'dashboard', '2': 'floors', '3': 'research', '4': 'storage', '5': 'power', '6': 'codex', '7': 'milestones' };
+
+  document.addEventListener('keydown', function (e) {
+    // Skip if user is typing in an input or textarea
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
+    // Skip if a modifier key is held (avoid clashing with browser shortcuts)
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    const key = e.key;
+
+    if (PAGE_KEYS[key]) {
+      e.preventDefault();
+      if (gameState) switchPage(PAGE_KEYS[key]);
+      return;
+    }
+
+    if (key === 'c' || key === 'C') {
+      e.preventDefault();
+      if (gameState) crankManualPower();
+      return;
+    }
+
+    if (key === '?') {
+      e.preventDefault();
+      showShortcutsModal();
+      return;
+    }
+  });
+}());
 
 </script>
 </body>
