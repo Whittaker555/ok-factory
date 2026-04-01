@@ -688,9 +688,16 @@ select option { background: var(--bg-raised); color: var(--text); }
   align-items: stretch;
 }
 
-.machine-slot.filled.slot-flowing { border-left-color: var(--green); border-left-width: 3px; }
-.machine-slot.filled.slot-low     { border-left-color: var(--orange); border-left-width: 3px; }
-.machine-slot.filled.slot-starved { border-left-color: var(--red);    border-left-width: 3px; }
+.machine-slot.filled { position: relative; }
+
+.slot-status-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 3px 0 0 3px;
+}
 
 .machine-slot.filled .slot-header {
   display: flex;
@@ -3930,15 +3937,36 @@ function renderFloors() {
     else if (eff < 0.75) effClass = 'eff-50';
     else if (eff < 1) effClass = 'eff-75';
 
-    let slotStatusClass = '';
+    let statusBarHtml = '';
     if (recipe) {
-      if (starved) slotStatusClass = 'slot-starved';
-      else if (resourceEff < 1) slotStatusClass = 'slot-low';
-      else slotStatusClass = 'slot-flowing';
+      const inputEntries = Object.entries(recipe.inputs);
+      if (inputEntries.length === 0) {
+        statusBarHtml = `<div class="slot-status-bar" style="background:var(--green)"></div>`;
+      } else {
+        const segSize = 100 / inputEntries.length;
+        const stops = inputEntries.map(([res, amount], idx) => {
+          const needed = (amount / recipe.time) * powerEff;
+          const available = gameState.storage[res] || 0;
+          let color;
+          if (needed <= 0) {
+            color = 'var(--green)';
+          } else {
+            const ratio = available / needed;
+            if (ratio < 0.01) color = 'var(--red)';
+            else if (ratio < 1) color = 'var(--orange)';
+            else color = 'var(--green)';
+          }
+          const start = (idx * segSize).toFixed(1);
+          const end = ((idx + 1) * segSize).toFixed(1);
+          return `${color} ${start}% ${end}%`;
+        });
+        statusBarHtml = `<div class="slot-status-bar" style="background:linear-gradient(to bottom,${stops.join(',')})"></div>`;
+      }
     }
 
     return `
-      <div class="machine-slot filled ${slotStatusClass}">
+      <div class="machine-slot filled">
+        ${statusBarHtml}
         <div class="slot-header">
           <span class="slot-name">${escapeHtml(machine.name)}</span>
           <div style="display:flex;gap:4px;">
