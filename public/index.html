@@ -2004,7 +2004,7 @@ select option { background: var(--bg-raised); color: var(--text); }
       <div class="label">Session</div><div class="value" id="idle-session">00:00:00</div>
       <div class="label">Efficiency</div><div class="value" id="idle-efficiency">100%</div>
       <div class="label">Items/min</div><div class="value" id="idle-throughput">0</div>
-      <div class="label">Net Worth</div><div class="value" id="idle-networth">0<div id="idle-networth-full" style="font-size:10px;font-weight:400;color:rgba(236,236,239,0.3);margin-top:2px;font-variant-numeric:tabular-nums;">£0.00</div></div>
+      <div class="label">Net Worth</div><div class="value" id="idle-networth" style="font-size:13px;font-weight:400;font-variant-numeric:tabular-nums;">£0.00</div>
       <div class="label">£/min</div><div class="value" id="idle-vpm">0</div>
       <div class="label">Power</div><div class="value" id="idle-power">0 / 0 MW</div>
       <div class="label">Machines</div><div class="value" id="idle-machines">0</div>
@@ -3600,8 +3600,7 @@ function updateIdleStats() {
   document.getElementById('idle-session').textContent = `${h}:${m}:${s}`;
   document.getElementById('idle-efficiency').textContent = `${Math.round(stats.efficiency * 100)}%`;
   document.getElementById('idle-throughput').textContent = formatNum(Math.round(stats.totalThroughput));
-  document.getElementById('idle-networth').firstChild.textContent = formatNum(Math.round(stats.netWorth));
-  document.getElementById('idle-networth-full').textContent = '£' + stats.netWorth.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  document.getElementById('idle-networth').textContent = '£' + stats.netWorth.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   document.getElementById('idle-power').textContent = `${Math.round(stats.powerSupply)} / ${Math.round(stats.powerDemand)} MW`;
   document.getElementById('idle-machines').textContent = String(stats.totalMachines);
   document.getElementById('idle-vpm').textContent = formatNum(Math.round(stats.valuePerMinute));
