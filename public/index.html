@@ -2677,11 +2677,18 @@ function gameTickInner(dt) {
   gameState.alerts = [];
 
   // Only drain manual power when it's actually needed (covering a deficit)
-  const { manualUsed } = computePower();
+  const { manualUsed, generatorSupply: crankGenSupply } = computePower();
   if (gameState.manualPower > 0) {
     // Drain proportional to usage: if no deficit, no drain; if fully used, drain at 2 MW/s
     const drainRate = manualUsed > 0 ? 2 * dt : 0;
     gameState.manualPower = Math.max(0, gameState.manualPower - drainRate);
+  }
+  // Passive regen when no generators are built yet — removes the need to spam-click at game start
+  if (crankGenSupply === 0) {
+    const crankStatsRegen = getCrankStats();
+    if (gameState.manualPower < crankStatsRegen.max) {
+      gameState.manualPower = Math.min(crankStatsRegen.max, gameState.manualPower + 10 * dt);
+    }
   }
 
   // Decay challenge power timer
@@ -4829,15 +4836,26 @@ function updateManualPowerUI() {
     if (deficitEl) {
       deficitEl.style.display = '';
       if (manualTotal >= deficit) {
+        deficitEl.style.color = '';
         deficitEl.textContent = `▼ ${Math.round(deficit)} MW DEFICIT`;
       } else {
         deficitEl.textContent = `▼ ${Math.round(deficit)} MW DEFICIT!`;
         deficitEl.style.color = 'var(--red)';
       }
     }
+  } else if (!hasGenerators && manualTotal < stats.max) {
+    if (crankBtn) crankBtn.classList.remove('deficit');
+    if (deficitEl) {
+      deficitEl.style.display = '';
+      deficitEl.style.color = 'var(--green)';
+      deficitEl.textContent = '↑ Recharging...';
+    }
   } else {
     if (crankBtn) crankBtn.classList.remove('deficit');
-    if (deficitEl) deficitEl.style.display = 'none';
+    if (deficitEl) {
+      deficitEl.style.display = 'none';
+      deficitEl.style.color = '';
+    }
   }
 }
 
